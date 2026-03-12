@@ -1,0 +1,354 @@
+---
+title: "Evaluation of SNAP® GC Program for Aggression in girls"
+author: "Eric Lussier"
+date: "2026-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(modelsummary)
+```
+
+```{r data_import, include=FALSE}
+# Read wide-format data
+gc_wide <- read.csv("GC_Class_Wide.csv")
+
+gc_wide <- gc_wide %>%
+  mutate(
+    chrtgrp = factor(
+      chrtgrp,
+      levels = c(1, 2),
+      labels = c("Treatment", "Control")
+    )
+  )
+```
+
+```{r gc_wide, include=FALSE}
+# Reshape to long for conduct-problem T-scores
+gc_long_cd <- gc_wide %>%
+  select(
+    id, chrtgrp,
+    cd_t_t1, cd_t_t2, cd_t_t3, cd_t_t4, cd_t_t5
+  ) %>%
+  pivot_longer(
+    cols = starts_with("cd_t_t"),
+    names_to  = "time_var",
+    values_to = "cd"
+  ) %>%
+  mutate(
+    time_num = case_when(
+      time_var == "cd_t_t1" ~ 1,
+      time_var == "cd_t_t2" ~ 2,
+      time_var == "cd_t_t3" ~ 3,
+      time_var == "cd_t_t4" ~ 4,
+      time_var == "cd_t_t5" ~ 5,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  filter(!is.na(cd))
+
+# Apply time point removal: pre–12M, drop Control T1 (Pre-pre) and Treatment T5 (18M)
+gc_modelA_cd <- gc_long_cd %>%
+  filter(
+    time_num <= 4,
+    !(chrtgrp == "Control"   & time_num == 1),
+    !(chrtgrp == "Treatment" & time_num == 5)
+  ) %>%
+  mutate(
+    time = factor(
+      time_num,
+      levels = 1:4,
+      labels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")
+    )
+  )
+
+# Create numeric time index: 0 = Pre, 1 = Post, 2 = 6M, 3 = 12M
+gc_modelA_cd_lin <- gc_modelA_cd %>%
+  mutate(
+    time_index = as.numeric(time) - 1
+  )
+```
+
+***1.	Using data from the pre-test and up to 12 months of follow-up (excluding the Control group at Time 1 and the Treatment group at Time 5), evaluate the cohort differences in the intervention effects to ascertain the average change following the intervention program.***
+
+**INTRODUCTION:** In this report, I evaluate the SNAP® GC program for aggressive girls by examining whether participation in the program reduces conduct-problem T-scores over 12 months compared with a control cohort. The primary research questions are: 
+(1) Do conduct‑problem scores improve over time from pre‑intervention to 12‑month follow‑up?; and 
+(2) Do the rates of change and overall pre‑to‑12‑month improvements differ between treatment and control cohorts when multiple repeated measures are modeled using linear mixed‑effects models?
+
+**ANALYSIS:**
+*Study design and data:*
+Data is from a randomized trial in which girls were allocated to immediate SNAP GC treatment or wait‑list control. Conduct‑problem T‑scores were measured at several occasions; for this project we used pre‑test (Pre), post‑GC, 6‑month, and 12‑month assessments, excluding the control group’s early “Pre‑pre” measurement and the treatment group’s 18‑month follow‑up to ensure equal data collection time points. The analytic dataset was constructed by reshaping the wide file GC_Class_Wide.csv into long format, producing one record per child per time point with ID, cohort (chrtgrp), time, and conduct T‑score (cd_t_t*).
+
+*Statistical methods:* 
+For the primary continuous‑outcome analysis (Model A), I fit linear mixed‑effects model with conduct‑problem T‑score as the outcome, cohort (Treatment vs Control), time, and their interaction as fixed effects, and subject‑specific random intercepts to account for within‑child correlations. Time was modeled as a categorical factor (Pre, Post, 6M, 12M), providing group means and group × time contrasts at each follow‑up. I also aimed at estimating rates of change, so created a numeric time index (0, 1, 2, 3 for Pre, Post, 6M, 12M) and fit a model with cohort, time_index, and cohort × time_index; here the time_index slope represents average change in conduct T‑score per time point in the reference cohort, and the interaction represents the difference in slopes between cohorts.
+
+From the factor‑time model, I generated model‑based predicted mean conduct scores at each time point by cohort and computed pre‑to‑12‑month changes and their difference. From the numeric‑time model, I focused on the magnitude and significance of the cohort × time_index interaction as the primary test of cohort differences in the rate of improvement.
+
+*Results:*
+Conduct‑problem T‑scores decreased from pre‑intervention to 12‑month follow‑up in both treatment and control cohorts, which indicates clear improvement over time in the sample overall. In the numeric‑time model, each one‑occasion increase in time_index (0 = Pre, 3 = 12M) was associated with an average 2.51‑point reduction in conduct T‑scores in the treatment group (time_index slope −2.511, SE 0.394, p<0.001), and the additional change per occasion in the control group relative to treatment was very small and non‑significant (group × time_index slope −0.195, SE 0.847, p = 0.818), providing no evidence that the rate of change differed by cohort. 
+
+In the factor‑time model (time as categorical: Pre, Post, 6M, 12M), model‑based mean conduct scores at each follow‑up were lower than at baseline in both groups, and the group × time contrasts at Post, 6M, and 12M were close to zero with wide confidence intervals including zero and non‑significant p‑values, again indicating that pre‑to‑12‑month changes were similar in magnitude between treatment and control rather than favoring one group.
+
+```{r model A, include=TRUE}
+# Linear mixed model with group-specific slopes (rate of change per occasion)
+modA_cd_lin <- lmer(
+  cd ~ chrtgrp * time_index + (1 | id),
+  data = gc_modelA_cd_lin
+)
+
+summary(modA_cd_lin)
+```
+
+Model‑fit indices were consistent with these small between‑group effects. In the numeric‑time model, the marginal R² (variance explained by fixed effects only) was 0.091, while the conditional R² (fixed + random effects) was 0.699, with an intraclass correlation of 0.70, showing that most variability in conduct T‑scores was due to stable between‑child differences rather than group or time effects. The model’s AIC was 1523.4, BIC 1543.9, and RMSE 4.27, indicating a reasonable fit but modest explanatory power of the fixed effects. The corresponding factor‑time model yielded very similar marginal and conditional R², AIC/BIC, and RMSE values (differences only in the second decimal place), suggesting that treating time as categorical versus numeric did not materially change the quality of fit or the conclusion that both cohorts improved at roughly the same rate.
+
+```{r model A_mixed, include=TRUE}
+modelsummary(
+  modA_cd_lin,
+  statistic = "({std.error})",
+  stars = TRUE,
+  output = "markdown",
+  title = "Model A: Conduct Problems ~ Group × Time (Pre–12M)"
+)
+```
+
+ Fitted trajectory plots from both models showed nearly parallel slopes for treatment and control across Pre, Post, 6M, and 12M, with differences mainly at the intercept level and not in the gradient, visually reinforcing the numerical finding that although conduct‑problem scores declined over time in both cohorts, the regression slopes were similar and the cohort × time interaction was not significant.
+
+```{r regline, include=TRUE}
+# Prediction grid for smooth lines
+newdat_cd_lin <- expand.grid(
+  chrtgrp    = levels(gc_modelA_cd_lin$chrtgrp),
+  time_index = seq(0, 3, by = 0.1)   # 0–3 occasions
+)
+
+newdat_cd_lin$pred_cd <- predict(
+  modA_cd_lin,
+  newdata = newdat_cd_lin,
+  re.form = NA   # fixed effects only = average regression line
+)
+
+# Plot: average rate of change per occasion by group
+ggplot(newdat_cd_lin,
+       aes(x = time_index, y = pred_cd, color = chrtgrp)) +
+  geom_line(size = 1.2) +
+  scale_x_continuous(
+    breaks = 0:3,
+    labels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")
+  ) +
+  labs(
+    x = "Time",
+    y = "Fitted mean conduct T-score",
+    color = "Group",
+    title = "Linear mixed-effects regression lines for conduct problems"
+  ) +
+  theme_minimal()
+```
+
+**SUMMARY & CONCLUSION:**
+In this longitudinal mixed‑effects analysis, I found that conduct‑problem T‑scores decreased over 12 months in both treatment and wait‑list control girls, indicating significant improvement in behavior across the study period. However, the estimated group × time interactions and cohort‑specific slopes suggested that the additional benefit attributable to SNAP GC participation, beyond the improvement observed in the control cohort, was small and not statistically significant.
+
+This implies that, within this sample and time frame, the program’s impact on average conduct‑problem trajectories is limited or difficult to distinguish from natural change and other factors affecting both cohorts. Key limitations include the small sample size, lost of cases at follow‑up, and the focus on mean trajectories rather than clinically defined outcomes (e.g., crossing a conduct‑problem cutoff), which I will address separately in the categorical outcome (Model B) analysis. It is recommended to interpret these continuous‑outcome findings alongside the categorical results and considering whether specific subgroups or alternative outcome definitions reveal stronger or more clinically meaningful intervention effects.
+
+***2. Using data from the pre-test and up to 12 months of follow-up
+(excluding the Control group at Time 1 and the Treatment group at Time 5), then using 67 as a clinical cutoff for abnormal behavior (i.e., those with score 67 or above being abnormal), examine the changes over time in terms of the likelihood of being abnormal
+and cohort difference in the change. Report the results in a table.***
+
+**INTRODUCTION:**
+I investigated whether the SNAP® GC program for aggressive girls reduces conduct‑problem T‑scores over 12 months compared with a wait‑list control and whether it changes the likelihood of clinically abnormal conduct problems (T ≥ 67). My research questions were: 
+(1) Do conduct‑problem scores and the probability of abnormal conduct improve from pre‑intervention to 12‑month follow‑up?; and 
+(2) Do the rates and magnitudes of change in these outcomes differ between treatment and control cohorts when modeled longitudinally?
+
+**ANALYSIS**
+
+*Study design and data*
+See description from Question 1.
+
+*Statistical analysis: categorical outcome (Model B)*
+For the categorical outcome, I defined a binary indicator of abnormal conduct at each time point based on a T‑score cutoff of 67 (1 = T ≥ 67, 0 = T < 67). Using the same inclusion/exclusion rules and long structure, I fit a mixed‑effects logistic regression (logit link) with fixed effects for cohort, time, and their interaction and a random intercept for each child. From this model, I obtained model‑based predicted probabilities of abnormal conduct at each time by cohort and summarized the change in probability from Pre to 12M within each cohort and the difference in change between cohorts.
+
+```{r bin, include=FALSE}
+# 1 = abnormal (≥ 67), 0 = normal, for conduct T-scores
+gc_long_cd_bin <- gc_wide %>%
+  select(
+    id, chrtgrp,
+    cd_t_t1, cd_t_t2, cd_t_t3, cd_t_t4, cd_t_t5
+  ) %>%
+  pivot_longer(
+    cols      = starts_with("cd_t_t"),
+    names_to  = "time_var",
+    values_to = "cd"
+  ) %>%
+  mutate(
+    time_num = case_when(
+      time_var == "cd_t_t1" ~ 1,
+      time_var == "cd_t_t2" ~ 2,
+      time_var == "cd_t_t3" ~ 3,
+      time_var == "cd_t_t4" ~ 4,
+      time_var == "cd_t_t5" ~ 5,
+      TRUE ~ NA_real_
+    ),
+    abnormal = if_else(cd >= 67, 1L, 0L, missing = NA_integer_)
+  ) %>%
+  filter(!is.na(cd))
+
+gc_modelB_bin <- gc_long_cd_bin %>%
+  filter(
+    time_num <= 4,                                # up to 12M
+    !(chrtgrp == "Control"   & time_num == 1),    # exclude Control Time 1 (Pre-pre)
+    !(chrtgrp == "Treatment" & time_num == 5)     # exclude Treatment Time 5 (18M)
+  ) %>%
+  mutate(
+    time = factor(
+      time_num,
+      levels = 1:4,
+      labels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")
+    )
+  )
+
+gc_modelB_bin %>%
+  count(chrtgrp, time, abnormal)
+
+```
+
+
+```{r logmodelB, include=TRUE}
+# random intercept for child; logit link for abnormal (≥ 67)
+modB_bin <- glmer(
+  abnormal ~ chrtgrp * time + (1 | id),
+  data   = gc_modelB_bin,
+  family = binomial
+)
+
+summary(modB_bin)
+```
+
+*Results*
+The mixed‑effects logistic model shows that the odds of abnormal conduct (T ≥ 67) decreased substantially over time in both cohorts, with no statistically reliable evidence that this change differed between treatment and control groups.
+
+In this model with time treated as a categorical factor (Pre as reference), the log‑odds of abnormal conduct at baseline were elevated (intercept 2.51, p < 0.001), corresponding to high predicted Pre probabilities of being above the clinical cutoff. Relative to Pre time point, the odds of abnormal conduct in the treatment cohort dropped sharply at Post (timeT2_post estimate −2.47, p < 0.001), 6M (timeT3_6M estimate −2.42, p = 0.001), and 12M (timeT4_12M estimate −3.42, p < 0.001), indicating large reductions in risk over follow‑up. The cohort main effect at baseline was small and non‑significant (chrtgrpControl estimate 0.39, p = 0.701), suggesting similar initial odds of abnormal conduct across groups.
+
+Cohort × time interactions on the log‑odds scale were non significant. For example, the control–treatment difference in the Post change was 0.53 log‑odds units (chrtgrpControl × timeT2_post estimate 0.53, p = 0.623), and for 6M it was −1.19 (p = 0.285), with corresponding odds‑ratio estimates close to 1. These indicate no clear evidence that the trajectory of abnormal‑conduct risk differed by cohort, consistent with visual inspection of model‑based probabilities that showed similar Pre‑to‑12M declines in both groups.
+
+
+```{r logtab, include=TRUE}
+# Grid of group × time combinations
+newdat_bin <- expand.grid(
+  chrtgrp = levels(gc_modelB_bin$chrtgrp),
+  time    = levels(gc_modelB_bin$time)
+)
+
+# Predicted probability of being abnormal at each time by cohort
+newdat_bin$pred_p_abn <- predict(
+  modB_bin,
+  newdata = newdat_bin,
+  type    = "response",   # returns probabilities
+  re.form = NA
+)
+
+newdat_bin
+
+change_table_bin <- newdat_bin %>%
+  mutate(
+    time = factor(time,
+                  levels = c("T1_pre", "T2_post", "T3_6M", "T4_12M"))
+  ) %>%
+  pivot_wider(
+    id_cols   = chrtgrp,
+    names_from  = time,
+    values_from = pred_p_abn
+  ) %>%
+  mutate(
+    change_T1_T4 = T4_12M - T1_pre
+  )
+
+change_table_bin
+```
+
+```{r modelB_bin_tab, include=TRUE}
+modelsummary(
+  modB_bin,
+  statistic = "({std.error})",
+  stars = TRUE,
+  output = "markdown",
+  title = "Model B: Odds of Abnormal Conduct (≥ 67) ~ Group × Time (Pre–12M)"
+)
+```
+
+**SUMMARY & CONCLUSION**
+
+In my categorical analyses, I found that girls in both the SNAP GC treatment and wait‑list control cohorts showed substantial improvement in conduct‑problem outcomes from pre‑intervention to 12‑month follow‑up. However, the estimated group × time interactions in the linear mixed models and the mixed‑effects logistic models were small, with confidence intervals spanning the null and p‑values>0.05, suggesting that the benefit of SNAP GC participation beyond the improvement observed in the control cohort was limited and not statistically significant in this sample.
+
+These results imply that, over the first 12 months, the program’s average effect on conduct‑problem trajectories and on the probability of clinically abnormal conduct is modest or difficult to distinguish causally or from other influences affecting both groups. Important limitations include the small sample size, attrition, reliance on T‑score summaries and a single cutoff, and the focus on mean and probability trajectories that may mask heterogeneity in individual responses. In practice, I would interpret these findings cautiously, consider them alongside other evidence on SNAP GC, and recommend further work with larger samples, alternative outcome definitions (e.g., multiple clinical thresholds or composite outcomes), and subgroup analyses to identify children who might get greater benefit from the intervention.
+
+***3. Discuss which one (Model A vs. B) is more appropriate for describing the average change following the intervention? Which model would you recommend to practitioners,and why? Then, use a generative AI tool (e.g., ChatGPT) to obtain a second perspective on the same question. Provide the prompts you used and briefly discuss any differences between your own reasoning/results and the AI-generated answers.***
+
+**INTRODUCTION**
+For describing the average change in conduct-problem T-scores, following the SNAP GC intervention, I consider Model A (continuous conduct‑problem T‑score) and Model B (binary abnormal vs normal, T ≥ 67) to answer slightly different but complementary questions.
+
+**ANALYSIS**
+Model A and Model B describe different but complementary aspects of change following the intervention. Model A, using continuous T‑scores with a linear time term, directly estimates the average change in conduct‑problem severity and is statistically efficient because it retains full scale information; its fixed effects explain about 9% of the variance (R² marginal = 0.091) and the full mixed model explains about 70% (R² conditional = 0.699, ICC = 0.669, AIC = 1523.4, BIC = 1543.9, RMSE = 4.27), indicating substantial between‑child heterogeneity with modest contribution of time and cohort to variability in scores. 
+
+In contrast, Model B treats conduct as abnormal vs. not abnormal (T ≥ 67) and estimates how the probability of being clinically abnormal changes over time; its fixed effects explain slightly more variance on the latent scale (R² marginal = 0.144, R² conditional = 0.665, ICC = 0.609, AIC = 272.6, BIC = 300.0, RMSE = 0.29), reflecting clinically meaningful improvements in risk status but with a coarser, threshold‑based outcome.
+
+If “average change” is interpreted strictly as mean change in symptom severity, Model A is the more appropriate model to describe that trajectory, because it models the continuous T‑score directly and leverages all available information on the scale. However, for practitioners, I would recommend prioritizing Model B for decision‑making, because it answers the clinically intuitive question, “How much does the intervention reduce the proportion of girls above a clinically meaningful cutoff?”, while Model A can be presented alongside it to show the underlying continuous improvement. In practice, using both models provides the most informative picture: Model A quantifies average severity change over time, and Model B translates those changes into changes in the probability of being clinically abnormal, which is more directly aligned with clinical thresholds and service planning.
+
+```{r compmodel, include=TRUE}
+library(performance)   # for model_performance()
+library(dplyr)
+library(broom.mixed)   # for tidy() if you want slopes/ORs
+
+## Assume these objects already exist:
+## Model A (continuous T-score, numeric time)
+##   modA_cd_lin
+## Model B (abnormal >= 67, logistic, categorical time)
+##   modB_bin
+
+# 1. Extract performance indices
+perf_A <- model_performance(modA_cd_lin)
+perf_B <- model_performance(modB_bin)
+
+# 2. Build a compact comparison table
+model_comp <- bind_rows(
+  perf_A %>%
+    mutate(
+      Model      = "Model A (T-score, linear time)",
+      Outcome    = "Continuous T-score",
+      Time_type  = "Numeric (time_index)",
+      Link       = "Identity"
+    ),
+  perf_B %>%
+    mutate(
+      Model      = "Model B (abnormal ≥ 67)",
+      Outcome    = "Binary (abnormal)",
+      Time_type  = "Categorical (Pre, Post, 6M, 12M)",
+      Link       = "Logit"
+    )
+) %>%
+  select(
+    Model, Outcome, Time_type, Link,
+    R2_marginal, R2_conditional, ICC,
+    AIC, BIC, RMSE
+  )
+
+model_comp
+```
+
+*ChatGPT Prompt*
+“I have a randomized trial of a behavioral intervention for adolescent girls, with repeated conduct‑problem T‑scores (continuous) and a clinical cutoff at T = 67 defining abnormal vs normal. I fit (a) a linear mixed model on the continuous T‑scores and (b) a logistic mixed model on the binary abnormal outcome (T ≥ 67). Which model is more appropriate for describing the ‘average change’ following the intervention, and which would you recommend to practitioners? Justify your answer.”
+
+*ChatGPT Response*
+For estimating “average change” in a statistical sense, the linear mixed model for continuous T‑scores is more appropriate because it directly models change in mean conduct‑problem scores over time and uses all information on the T‑scale, making it more efficient and sensitive to subtle effects. However, for practitioners, I would recommend presenting the logistic mixed model on the binary abnormal outcome (T ≥ 67) as the primary result, because it yields directly interpretable quantities such as changes in the probability of being clinically abnormal, which align with clinical decision‑making and risk communication (e.g., “the proportion of girls in the abnormal range decreased from X% to Y%”). In practice, I would use both: the continuous model to estimate and test the intervention effect on mean trajectories, and the logistic model to express those effects in clinically meaningful terms for non‑statistical audiences.
+
+**SUMMARY & CONCLUSION** 
+
+Both models showed improvement over time in both cohorts and no strong evidence of an effect from the intervention (group × time interactions small and not statistically significant in both linear and logistic mixed models). The continuous model is more powerful for detecting subtle effects and helps verify that the binary results are not driven solely by the cutoff; together, they give a more complete picture.
+
+The generative‑AI prompt response summarized the roles continuous and categorical models. Linear mixed model is best suited for quantifying “average change” in mean T‑scores, while the logistic mixed model is better for clinically framed risk changes to healthcare practitioners, and recommends using both in interpretation. In my earlier responses, I focused more on the specific trial results (e.g., similar pre‑to‑12‑month changes and non‑significant group × time interactions in both models) and I agreed with recommending Model B for healthcare practitioner use prioritizing “average change” in clinical terms, with the continuous model to support Model B findings. The main difference is that the prompt response is more method‑centric and generalizable (defining ideal use cases for each model), whereas my earlier write‑ups are more focused on data and have more context, emphasizing observed similarity in declinicing trajectories of conduct problems, but with insufficient evidence to support the effectiveness of the proram.

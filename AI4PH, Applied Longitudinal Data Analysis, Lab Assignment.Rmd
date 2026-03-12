@@ -1,0 +1,280 @@
+---
+title: "Evaluation of SNAP GC Program for Aggression in Girls"
+author: "Eric Lussier"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(modelsummary)
+```
+
+**INTRODUCTION:** This is an evaluation analysis of the SNAP® GC (an intervention program for aggressive young girls and their families). I am focusing on Externalizing problem as outcome variables according to the instructions below. 
+
+***1.Using data from the pre-test and up to 12 months of follow-up (excluding the Control group at Time 1 and the Treatment group at Time 5), analyze the intervention effect to determine the average change following the intervention program. (Model A, 7 points)***
+
+**1.1 Data Import**
+
+```{r data_import, include=TRUE}
+# Read wide-format data
+gc_wide <- read.csv("GC_Class_Wide.csv")
+
+gc_wide <- gc_wide %>%
+  mutate(
+    chrtgrp = factor(
+      chrtgrp,
+      levels = c(1, 2),
+      labels = c("Treatment", "Control")
+    )
+  )
+```
+
+**1.2 Transforming Data from Wide to Long and Remove time points**
+
+```{r gc_wide, include=TRUE}
+gc_long_ext <- gc_wide %>%
+  select(
+    id, chrtgrp,
+    ext_t_t1, ext_t_t2, ext_t_t3, ext_t_t4, ext_t_t5
+  ) %>%
+  pivot_longer(
+    cols = starts_with("ext_t_t"),
+    names_to = "time_var",
+    values_to = "ext"
+  ) %>%
+  mutate(
+    time_num = case_when(
+      time_var == "ext_t_t1" ~ 1,
+      time_var == "ext_t_t2" ~ 2,
+      time_var == "ext_t_t3" ~ 3,
+      time_var == "ext_t_t4" ~ 4,
+      time_var == "ext_t_t5" ~ 5,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  filter(!is.na(ext))
+
+gc_modelA <- gc_long_ext %>%
+  filter(
+    time_num <= 4,                               # up to 12 months
+    !(chrtgrp == "Control"   & time_num == 1),   # exclude Control at Time 1
+    !(chrtgrp == "Treatment" & time_num == 5)    # exclude Treatment at Time 5
+  ) %>%
+  mutate(
+    time = factor(
+      time_num,
+      levels = 1:4,
+      labels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")
+    )
+  )
+```
+
+**1.3 Mixed model for intervention effect**
+
+```{r gc_modelA, include=TRUE}
+
+modA_ext <- lmer(
+  ext ~ chrtgrp * time + (1 | id),
+  data = gc_modelA
+)
+
+modelsummary(
+  modA_ext,
+  statistic = "({std.error})",
+  stars = TRUE,
+  output = "markdown",
+  title = "Model A: Externalizing Problems ~ Group × Time"
+)
+```
+
+**1.4 Average Change Following Intervention**
+
+```{r gc_modelA-fit, includ=TRUE}
+# 1. Predicted means by group and time from Model A
+newdat <- expand.grid(
+  chrtgrp = levels(gc_modelA$chrtgrp),
+  time    = levels(gc_modelA$time)
+)
+
+# fixed-effects only: average regression lines
+newdat$pred_ext <- predict(
+  modA_ext,
+  newdata = newdat,
+  re.form = NA   
+)
+
+# 2. Wide table with pre and 12M change
+change_table <- newdat %>%
+  mutate(
+    time = factor(time,
+                  levels = c("T1_pre", "T2_post", "T3_6M", "T4_12M"))
+  ) %>%
+  pivot_wider(
+    id_cols   = chrtgrp,
+    names_from  = time,
+    values_from = pred_ext
+  ) %>%
+  mutate(
+    change_T1_T4 = T4_12M - T1_pre
+  )
+
+change_table 
+
+# 3. Plot fitted mean trajectories by group over time
+ggplot(newdat,
+       aes(x = factor(time,
+                      levels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")),
+           y = pred_ext,
+           group = chrtgrp,
+           color = chrtgrp)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Time",
+    y = "Fitted mean externalizing T-score",
+    color = "Group",
+    title = "Fitted mixed-effects model trajectories (externalizing)"
+  ) +
+  theme_minimal()
+```
+
+**CONCLUSION:** The mean difference in Externalizing problem T score decreased more for the Treatment group from Pre time point for Treatment vs. Control (71.4 vs. 68.6), to Post time point for Treatment vs. Control (65.2 vs. 67.7). There was not a significant difference in mean externalizing change from Pre to 12 month follow-up, with both group's externalizing T scores decreasing by -7.54 over the time period.
+
+
+***2.	Using data from the pre-test and up to 12 months of follow-up (excluding the Control group at Time 1 and the Treatment group at Time 5), evaluate the cohort differences in the intervention effects to ascertain the average change following the intervention program. (Model B, 7 points).*** 
+
+In this section, I will again focus on externalizing problems as the outcome, and I estimate whether the **rate of change over time** differs between the Treatment and Control cohorts.
+
+```{r }
+# Reuse gc_modelA from Question 1:
+# gc_modelA has id, chrtgrp (Treatment/Control), time (T1_pre–T4_12M), ext
+
+# Create time index for linear trend: 0 = pre, 1 = post, 2 = 6M, 3 = 12M
+gc_modelB <- gc_modelA %>%
+  mutate(
+    time_index = as.numeric(time) - 1
+  )
+
+gc_modelB %>%
+  count(chrtgrp, time, time_index)
+```
+
+```{r }
+# Model B: cohort differences in change over time
+modB_ext <- lmer(
+  ext ~ chrtgrp * time_index + (1 | id),
+  data = gc_modelB
+)
+
+modelsummary(
+  modB_ext,
+  statistic = "({std.error})",
+  stars = TRUE,
+  output = "markdown",
+  title = "Model B: Cohort Differences in Change (Externalizing)"
+)
+```
+
+```{r }
+# Predicted means at pre (0) and 12M (3) for each cohort
+newdat_B <- expand.grid(
+  chrtgrp    = levels(gc_modelB$chrtgrp),
+  time_index = c(0, 3)
+)
+
+newdat_B$pred_ext <- predict(
+  modB_ext,
+  newdata = newdat_B,
+  re.form = NA
+)
+
+# Wide table with pre and 12M and change
+change_B <- newdat_B %>%
+  mutate(
+    time_label = if_else(time_index == 0, "T1_pre", "T4_12M")
+  ) %>%
+  select(chrtgrp, time_label, pred_ext) %>%
+  tidyr::pivot_wider(
+    id_cols   = chrtgrp,
+    names_from  = time_label,
+    values_from = pred_ext
+  ) %>%
+  mutate(
+    change_T1_T4 = T4_12M - T1_pre
+  )
+
+change_B  # prints the table in the report
+
+# Fitted regression lines across all four time points
+newdat_plot_B <- expand.grid(
+  chrtgrp    = levels(gc_modelB$chrtgrp),
+  time_index = seq(0, 3, by = 1)
+)
+
+newdat_plot_B$pred_ext <- predict(
+  modB_ext,
+  newdata = newdat_plot_B,
+  re.form = NA
+)
+
+ggplot(newdat_plot_B,
+       aes(x = time_index, y = pred_ext,
+           group = chrtgrp, color = chrtgrp)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(
+    breaks = 0:3,
+    labels = c("T1_pre", "T2_post", "T3_6M", "T4_12M")
+  ) +
+  labs(
+    x = "Time",
+    y = "Fitted mean externalizing T-score",
+    color = "Group",
+    title = "Model B: Fitted trajectories by cohort (externalizing)"
+  ) +
+  theme_minimal()
+```
+
+**CONCLUSION:** The estimated average change in externalizing problems from pre‑intervention to 12 months was −7.18 points in the treatment group and −10.2 points in the control group, suggesting that the control cohort showed a slightly larger improvement over this period. However, the mixed‑effects model indicates that the group × time interaction is small and not statistically significant. Although the observed difference between −7.18 and −10.2 is appears large, and there is no strong statistical evidence that the rate of change in externalizing outcomes truly differs between the treatment and control groups under Model B.
+
+
+***3.	Discuss whether the average change following the intervention program estimated from Model A or B can be used the estimates of program effect size. Then, use a generative AI tool (e.g., ChatGPT) to compare. Provide the prompts you used and discuss any differences between your responses (methods and results) and the AI-generated ones.  (6 points).***
+
+The average change estimates from Models A and B are not ideal measures of program effect size. Although they are related to the intervention effect.
+
+In Model A, the group‑specific average change (e.g., Treatment = −7.2, Control = −10.2) describes within‑group improvement over time but does not by itself account for causal intervention effect. The effect of the program is the difference in change between groups, not each change separately.
+
+In Model B, the key causal contrast is the group × time (or group × time_index) interaction, which represents how much faster (or slower) the treatment cohort changes compared with control. That interaction can be turned into an effect size, but the raw average changes alone are descriptive, not effect sizes.
+
+A better effect size would be the difference in model‑based change between groups divided by a pooled SD, or a standardized version of the interaction term from the mixed model.
+
+**Perplexity Prompt:** I have a randomized trial of an aggression program for girls with repeated externalizing scores at baseline, post, 6 months, and 12 months for treatment and waitlist control. I fit a linear mixed model with group, time, and group×time. Can I interpret the group‑specific average change from baseline to 12 months as the program’s effect size?
+
+**Perplexity Output:** No. The group‑specific average change from baseline to 12 months is a within‑group summary and is not, by itself, the program’s effect size in a randomized trial with a control arm.
+
+In a longitudinal mixed model with group, time, and group×time, the parameter that represents the intervention effect is the group×time interaction, which tells you whether trajectories over time differ between treatment and control.
+
+The average change within the treatment group (baseline → 12 months) mixes true intervention effect with natural change over time (regression to the mean, maturation, etc.), which is exactly what the randomized control group is designed to control for.
+
+To quantify a program effect size, you should use either:
+
+The difference in change between groups (e.g., ΔTreatment − ΔControl) and, if desired, standardize it; or
+
+A standardized version of the group×time coefficient from your mixed model, as recommended for growth‑modeling analyses of intervention trials.
+
+You can still report group‑specific average changes descriptively, but the program effect size should be based on a between‑group contrast in change, not on each group’s change alone.
+
+**DISCUSSION:** The two interpretations differ mainly in what they treat as the effect and how tightly they tie it to the model.
+
+***In my interpretation***, the focus was on comparing the group‑specific average changes (e.g., −7.18 vs −10.2) and then noting that the mixed‑model interaction term was not statistically significant, so the apparent difference in change could be due to chance.
+
+***In the GenAI interpretation***, the emphasis shifted to methods and estimates: it explicitly states that within‑group average change (treatment or control alone) is not the program’s effect size in a randomized trial. Instead, it clarifies that the group × time interaction (or difference in change between groups) is the appropriate measure of the intervention effect, and that any effect size should be derived from that between‑group contrast, not from the treatment group’s change in isolation.
