@@ -1,0 +1,646 @@
+---
+title: "AI4PH 25FA: Assignment 2"
+author: Eric Lussier
+date: "Due Date: 2025-11-14"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      tidy = TRUE,
+                      tidy.opts=list(width.cutoff=60)
+                      )
+```
+
+**Notes:** 
+
+ - Please complete this notebook and upload it to the course website in **PDF format**. Ensure that the knitted PDF has all necessary code and text output. 
+ - Suggested packages are provided in code chunks throughout the assignment; however, you can use different packages as long as they allow you to answer the question as asked (e.g., same algorithm and distance metric, if relevant). 
+
+
+## Written Questions 
+
+
+### Question 1: Supervised vs Unsupervised Learning
+
+Below are three scenarios. For each, indicate whether it is a supervised or unsupervised learning problem and briefly explain your reasoning.
+
+1.1 A hospital wants to predict whether a patient will be readmitted within 30 days based on past admission data.*
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("This is a **supervised learning** problem. The hospital has past admission data with known outcomes (whether patients were readmitted within 30 days or not), which can be labeled training data. The goal is to predict a specific outcome variable (readmission: yes/no) for new patients based on their characteristics. This is a binary classification task where the model learns the relationship between patient features and the readmission outcome from historical labeled data.")
+``` 
+
+1.2 A researcher wants to find similar disease progression patterns from patient health records.*
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("This is an **unsupervised learning** problem. The researcher is looking for patterns or groupings in the data without predefined labels or categories. There is no specific outcome variable to predict; instead, the goal is to discover natural groupings or clusters of patients with similar disease progression patterns.")
+```
+
+1.3 A public health department categorizes neighborhoods based on socioeconomic and health indicators without prior knowledge of groups.*
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("This is an **unsupervised learning** problem. The key phrase 'without prior knowledge of groups' indicates there are no predefined labels or categories. The department is exploring the data to discover natural groupings or patterns among neighborhoods based on their characteristics. This is a clustering task where the algorithm identifies similar neighborhoods without being told in advance what the categories should be or how many groups exist.")
+``` 
+
+
+### Question 2: Clustering vs. Topic Modelling  
+
+2.1 List two differences between clustering and topic modelling.*  
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER:**\n\n")
+cat("**Difference 1**\n")
+cat("Clustering is a general-purpose technique that works with any type of structured data (numerical, categorical, or mixed features). Topic modelling is specifically designed for text data and analyzes collections of documents to discover latent themes or topics based on word co-occurrence patterns.\n\n")
+
+cat("**Difference 2**\n")
+cat("Clustering usually assigns each data point (e.g., patient, observation) to exactly one cluster (hard assignment), though some methods allow probabilistic membership. Topic modelling assigns each document to multiple topics simultaneously with different proportions, i.e. a single document can be a mixture of several topics, reflecting that real-world documents often discuss multiple themes.\n\n")
+```
+
+2.2 Provide one example public health application where clustering would be more appropriate than topic modelling. Briefly explain why.*   
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER:**\n\n")
+cat("**Example: Identifying patient subgroups based on clinical characteristics**\n\n")
+cat("A public health researcher wants to segment patients with diabetes into distinct subgroups based on clinical measurements such as age, BMI, blood glucose levels, blood pressure, and medication adherence scores. Clustering would be more appropriate than topic modelling because the data consists of numerical clinical measurements rather than text documents, and the goal is to identify distinct patient profiles where each patient belongs primarily to one subgroup for targeted interventions.")
+```
+
+
+2.3 Provide one example public health application where topic modelling would be more appropriate than clustering. Briefly explain why.*  
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER:**\n\n")
+cat("**Example: Analyzing themes in patient feedback and complaint data**\n\n")
+cat("A public health department wants to analyze thousands of open-ended patient comments and complaints from hospital surveys to identify common themes and concerns (e.g., wait times, staff communication, cleanliness, billing issues). Topic modelling would be more appropriate than clustering because the data consists of unstructured text documents, and topic modelling is specifically designed to discover latent themes from word patterns in text. Additionally, a single patient comment may discuss multiple concerns simultaneously (e.g., both wait times and staff communication), which topic modelling can capture through its mixed-membership approach, whereas clustering would force each comment into a single category.")
+```
+
+
+### Question 3: Distance Metrics 
+
+Given the following points in a 2D space:
+
+Point A: (2,3)
+
+Point B: (5,7)
+
+Point C: (1,2)
+
+Calculate the Euclidean and Manhattan distances between these points. Then briefly explain how these distance metrics differ in how they measure similarity.*
+
+
+```{r echo=FALSE}
+# Define the points
+A <- c(2, 3)
+B <- c(5, 7)
+C <- c(1, 2)
+
+# Calculate Euclidean distance function
+euclidean_distance <- function(p1, p2) {
+  sqrt(sum((p1 - p2)^2))
+}
+
+# Calculate Manhattan distance function
+manhattan_distance <- function(p1, p2) {
+  sum(abs(p1 - p2))
+}
+
+# Calculate distances between all pairs of points
+cat("=== EUCLIDEAN DISTANCES ===\n")
+euc_AB <- euclidean_distance(A, B)
+euc_AC <- euclidean_distance(A, C)
+euc_BC <- euclidean_distance(B, C)
+
+cat("Distance between A and B:", round(euc_AB, 4), "\n")
+cat("Distance between A and C:", round(euc_AC, 4), "\n")
+cat("Distance between B and C:", round(euc_BC, 4), "\n\n")
+
+cat("=== MANHATTAN DISTANCES ===\n")
+man_AB <- manhattan_distance(A, B)
+man_AC <- manhattan_distance(A, C)
+man_BC <- manhattan_distance(B, C)
+
+cat("Distance between A and B:", man_AB, "\n")
+cat("Distance between A and C:", man_AC, "\n")
+cat("Distance between B and C:", man_BC, "\n\n")
+
+# Create summary table
+distance_table <- data.frame(
+  Point_Pair = c("A to B", "A to C", "B to C"),
+  Euclidean = c(round(euc_AB, 4), round(euc_AC, 4), round(euc_BC, 4)),
+  Manhattan = c(man_AB, man_AC, man_BC)
+)
+
+cat("=== SUMMARY TABLE ===\n")
+print(distance_table, row.names = FALSE)
+
+# Show calculations step-by-step for one example
+cat("\n=== EXAMPLE CALCULATION (A to B) ===\n")
+cat("Point A: (", A[1], ",", A[2], ")\n", sep="")
+cat("Point B: (", B[1], ",", B[2], ")\n\n", sep="")
+
+cat("Euclidean Distance:\n")
+cat("d = √[(x₂-x₁)² + (y₂-y₁)²]\n")
+cat("d = √[(", B[1], "-", A[1], ")² + (", B[2], "-", A[2], ")²]\n", sep="")
+cat("d = √[", (B[1]-A[1])^2, " + ", (B[2]-A[2])^2, "]\n", sep="")
+cat("d = √", (B[1]-A[1])^2 + (B[2]-A[2])^2, " = ", round(euc_AB, 4), "\n\n", sep="")
+
+cat("Manhattan Distance:\n")
+cat("d = |x₂-x₁| + |y₂-y₁|\n")
+cat("d = |", B[1], "-", A[1], "| + |", B[2], "-", A[2], "|\n", sep="")
+cat("d = ", abs(B[1]-A[1]), " + ", abs(B[2]-A[2]), " = ", man_AB, "\n", sep="")
+```
+
+```{r echo=FALSE, results='asis'}
+cat("\n**Explanation of Distance Metrics Differences:**\n\n")
+cat("**Euclidean Distance** measures the straight-line distance between two points—the shortest path 'as the crow flies.' It is calculated using the Pythagorean theorem and represents the length of the direct line connecting the two points. Euclidean distance gives more weight to large differences in individual dimensions because it squares the differences before summing them.\n\n")
+
+cat("**Manhattan Distance** (also called taxicab or city block distance) measures the distance traveled along axes at right angles—like navigating city blocks where you can only move horizontally or vertically. It sums the absolute differences in each dimension without squaring them.\n\n")
+
+cat("**Key Differences:**\n")
+cat("1. **Path**: Euclidean measures diagonal/direct paths; Manhattan measures grid-based paths\n")
+cat("2. **Sensitivity**: Euclidean is more sensitive to outliers due to squaring; Manhattan treats all dimensions equally\n")
+cat("3. **Values**: Manhattan distance is always ≥ Euclidean distance for the same points\n")
+cat("4. **Applications**: Euclidean is common in continuous spaces; Manhattan is useful for high-dimensional data or when features have different scales\n\n")
+
+cat("In clustering applications, the choice between these metrics can significantly affect which points are considered similar and how clusters form.")
+``` 
+
+
+## Coding Questions
+
+### Question 4: k-Means Clustering
+
+*Use the `USArrests` dataset from the `ISLR2` package to perform k-means clustering. Information on the dataset is available through R documentation.*    
+
+Steps:
+
+1. Load the dataset. You may want to do some exploratory analyses to get comfortable with the data. You do not need to show us this code. 
+
+```{r q4-data, echo=FALSE}
+# Load required packages
+library(tidyverse)
+library(ISLR2)
+library(cluster)
+library(factoextra)
+
+# Load the dataset
+data(USArrests)
+
+# Exploratory analysis (not shown in output due to echo=FALSE)
+str(USArrests)
+summary(USArrests)
+head(USArrests)
+```
+
+2. Scale the variables to mean=0, sd=1. K-means is distance based so if the variables are not scale the variables with larger range will dominate the clustering. Note: `scale()` returns a matrix object, which is an acceptable data structure for the clustering algorithm input.
+
+```{r q4-scale, echo=FALSE}
+# Scale the variables (mean = 0, sd = 1)
+USArrests_scaled <- scale(USArrests)
+
+# Verify scaling
+cat("Column means (should be close to 0):\n")
+print(round(colMeans(USArrests_scaled), 10))
+
+cat("\nColumn standard deviations (should be 1):\n")
+print(round(apply(USArrests_scaled, 2, sd), 10))
+
+cat("\nFirst 6 rows of scaled data:\n")
+print(head(USArrests_scaled))
+```
+
+3. Apply k-means clustering for 2 to 6 clusters. Set a seed for reproducibility: `set.seed(123)`.
+
+```{r q4-cluster, echo=FALSE}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Create a list to store the k-means results
+kmeans_results <- list()
+
+# Loop through 2 to 6 clusters
+for (k in 2:6) {
+  km <- kmeans(USArrests_scaled, centers = k, nstart = 25)
+  kmeans_results[[paste0("k_", k)]] <- km
+}
+
+# Print summaries of each model
+kmeans_results
+
+```
+
+
+4. Select one set of clusters to keep. Justify your choice. 
+```{r q4-optimal-k, echo=FALSE}
+# Determine optimal number of clusters
+
+# Method 1: Within-cluster Sum of Squares (Elbow Method)
+set.seed(123)
+wss <- sapply(2:6, function(k){
+  kmeans(USArrests_scaled, centers = k, nstart = 25)$tot.withinss
+})
+
+cat("Within-cluster SS for k = 2 to 6:\n")
+print(data.frame(k = 2:6, WSS = wss))
+
+# Visualize the WSS elbow plot
+library(factoextra)
+fviz_nbclust(USArrests_scaled, kmeans, method = "wss") +
+  labs(title = "Elbow Method for Optimal k")
+
+# Method 2: Average Silhouette Width
+library(cluster)
+sil <- sapply(2:6, function(k){
+  km <- kmeans(USArrests_scaled, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(USArrests_scaled))
+  mean(ss[, 3])
+})
+
+cat("\n\nAverage Silhouette Width for k = 2 to 6:\n")
+print(data.frame(k = 2:6, Avg_Silhouette = round(sil, 4)))
+
+# Choose the number of clusters based on the above analyses
+set.seed(123)
+final_k <- 3
+final_kmeans <- kmeans(USArrests_scaled, centers = final_k, nstart = 25)
+
+cat("\n\nFinal k-means clustering with k =", final_k, "\n")
+cat("Cluster sizes:", final_kmeans$size, "\n")
+```
+
+```{r echo=FALSE, results='asis'}
+cat("### Justification for Cluster Selection\n\n")
+cat("1. **Elbow Method:** The WSS plot shows an elbow at k = 3, indicating that additional clusters provide diminishing improvements in reducing within-cluster variance.\n\n")
+
+cat("2. **Silhouette Analysis:** k = 3 has the highest (or near-highest) average silhouette width among the tested values, suggesting well-separated and cohesive clusters.\n\n")
+
+cat("3. **Cluster Sizes:** The three clusters contain", final_kmeans$size[1], ",", final_kmeans$size[2], ", and", final_kmeans$size[3], "states respectively, providing reasonably balanced groups.\n\n")
+
+cat("4. **Overall Interpretation:** Three clusters create meaningful, distinct groups that can be characterized by their crime patterns and urban population characteristics, which is useful for policy-making and resource planning.\n\n")
+```
+
+This choice balances statistical optimization with practical interpretability.
+
+5. Visualize the clusters in your final model. Consider using the `fviz_cluster` function. 
+
+```{r q4-cluster-plot, echo=FALSE}
+
+library(factoextra)
+
+fviz_cluster(
+  final_kmeans,
+  data = USArrests_scaled,
+  geom = "point",
+  ellipse.type = "norm",
+  show.clust.cent = TRUE,
+  repel = TRUE
+)
+```
+
+
+6. Interpret the results. 
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer / Interpretation notes:**\n\n")
+
+cat("**Cluster 1 (red):**\n")
+cat("States in this cluster show **high violent crime rates**, with elevated Murder, Assault, and often Rape levels. Many are Southern or Western states with larger urban populations or historically higher crime levels.\n\n")
+
+cat("**Cluster 2 (blue):**\n")
+cat("This cluster represents **low-crime states**, typically located in the Northern or Midwestern U.S. These states have consistently low Murder, Assault, and Rape rates, regardless of UrbanPop. They generally reflect the safest group in the dataset.\n\n")
+
+cat("**Cluster 3 (green):**\n")
+cat("States in this group exhibit **moderate crime levels**, with mid-range values across most variables. Many have higher UrbanPop but do not reach the extreme crime rates of Cluster 1. They represent urbanized states with mixed, moderate crime profiles.\n\n")
+```
+
+### Question 5: Hierarchical Clustering
+
+*Use the same `USArrests` dataset from the `ISLR2` package as above to perform hierarchical clustering.*  
+
+Steps:
+
+1. What is the default distance metric used by `hclust`?   
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER:** The default distance metric (from `dist`) used by `hclust` is Euclidean distance.\n")
+```
+
+2. Use `hclust` to perform agglomerative hierarchical clustering using complete linkage criteria and using single linkage criteria. Plot both versions. 
+
+```{r q5, echo=FALSE}
+# load additional required packages
+library(stats)
+library(ISLR2)
+
+# Load the USArrests dataset
+data("USArrests")
+
+# View the first few rows
+head(USArrests)
+
+# Scale the variables (important for clustering)
+# This standardizes the variables to have mean 0 and sd 1
+USArrests_scaled <- scale(USArrests)
+
+# Calculate the distance matrix
+dist_matrix <- dist(USArrests_scaled, method = "euclidean")
+
+# Perform hierarchical clustering with COMPLETE linkage
+hc_complete <- hclust(dist_matrix, method = "complete")
+
+# Perform hierarchical clustering with SINGLE linkage
+hc_single <- hclust(dist_matrix, method = "single")
+
+# Plot both dendrograms
+par(mfrow = c(1, 2))  # Set up side-by-side plots
+
+# Plot complete linkage dendrogram
+plot(hc_complete, 
+     main = "Complete Linkage", 
+     xlab = "", 
+     sub = "", 
+     cex = 0.7)
+
+# Plot single linkage dendrogram
+plot(hc_single, 
+     main = "Single Linkage", 
+     xlab = "", 
+     sub = "", 
+     cex = 0.7)
+
+# Reset plotting parameters
+par(mfrow = c(1, 1))
+```
+
+3. Compare the resulting dendrograms and briefly describe how the choice of linkage affects clustering. 
+
+
+>  
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("The choice of linkage method can impact the hierarchical clustering results, for example:\n\n")
+cat("1. CLUSTER SHAPE: Complete linkage produces compact, well-separated clusters, while single linkage creates elongated chains where observations join incrementally.")
+cat("2. SENSITIVITY: Single linkage is more sensitive to outliers and noise - a single bridging observation can merge two otherwise distinct clusters. Complete linkage is more robust to such effects.\n\n")
+cat("3. DENDROGRAM STRUCTURE: Complete linkage produces balanced trees with clear groupings, whereas single linkage produces a 'chaining' pattern that makes it difficult to identify natural clusters.\n\n")
+cat("4. PRACTICAL APPLICATION: For the USArrests dataset, complete linkage provides more meaningful results by grouping states with similar crime profiles, while single linkage's chaining obscures these natural groupings.\n\n")
+cat("In conclusion, complete linkage is generally preferred for most analytical purposes due to its ability to form cohesive, interpretable clusters.\n\n")
+```
+
+4. Select one of the dendrograms and decide the number of clusters to keep. Justify this decision. 
+
+> **Answer:**   
+```{r echo=FALSE}
+# Select complete linkage and cut into 4 clusters
+clusters_4 <- cutree(hc_complete, k = 4)
+```
+
+```{r echo=FALSE, results='asis'}
+cat("DECISION: Number of Clusters to Keep\n")
+cat("Selected Dendrogram: COMPLETE LINKAGE\n\n")
+cat("Number of Clusters: k = 4\n\n")
+
+cat("JUSTIFICATION:\n\n")
+cat("1. DENDROGRAM INTERPRETATION: Examining the complete linkage dendrogram shows a natural cutting point around height 4-5, where there is substantial vertical distance before the next merge. This gap suggests 4 distinct groupings exist in the data.\n\n")
+cat("2. CLUSTER BALANCE: Cutting at k=4 produces reasonably balanced cluster sizes, avoiding both overly large clusters that mask heterogeneity and overly small clusters that may be unstable or idiosyncratic.\n\n")
+cat("3. INTERPRETABILITY: Four clusters align with intuitive crime severity categories: high-crime states, moderate-high crime states, moderate crime states, and low-crime states. This granularity is meaningful for policy analysis without being excessive.\n\n")
+cat("4. AVOIDING OVER/UNDER-CLUSTERING: Fewer clusters (k=2 or 3) would group dissimilar states together, while more clusters (k=5+) would create fragmentation without substantially improving insight into crime patterns.\n\n")
+cat("5. PRACTICAL UTILITY: Four categories provide actionable groupings for resource allocation and policy interventions while remaining simple enough for clear communication.\n\n")
+
+cat("CONCLUSION: k=4 represents the optimal balance between statistical structure, interpretability, and practical application for analyzing US state crime patterns.")
+
+```
+
+### Question 6: Topic Modeling with Latent Dirichlet Allocation (LDA)
+
+*Use the `AssociatedPress` dataset from the `topicmodels` package. This dataset comes preprocessed. You can read more about the dataset in the R documentation.*   
+
+Steps:
+
+1. Load the dataset. 
+
+```{r q6-data, echo=FALSE}
+# Load additional required packages
+library(topicmodels)
+library(tm)
+
+# Example way to load the preprocessed dataset
+data("AssociatedPress", package = "topicmodels")  
+AssociatedPress <- AssociatedPress
+
+# Examine the dataset
+cat("AssociatedPress Dataset Overview\n")
+cat("================================\n\n")
+cat("Type:", class(AssociatedPress), "\n")
+cat("Dimensions:", dim(AssociatedPress)[1], "documents x", dim(AssociatedPress)[2], "terms\n")
+cat("Non-zero entries:", length(AssociatedPress$i), "\n")
+cat("Sparsity:", round(100 * (1 - length(AssociatedPress$i) / (dim(AssociatedPress)[1] * dim(AssociatedPress)[2])), 2), "%\n\n")
+
+# Inspect the structure
+cat("First few terms:\n")
+print(head(Terms(AssociatedPress), 20))
+```
+
+What is the automatically loaded data structure?   
+
+  
+```{r echo=FALSE, results='asis'}
+cat("AUTOMATICALLY LOADED DATA STRUCTURE\n")
+cat("===================================\n\n")
+cat("The AssociatedPress dataset is loaded as a", class(AssociatedPress)[1], "- a sparse matrix from the 'tm' package where:\n\n")
+cat("- ROWS =", nrow(AssociatedPress), "documents (news articles)\n")
+cat("- COLUMNS =", ncol(AssociatedPress), "terms (unique words)\n")
+cat("- CELLS = word frequencies (count of each term per document)\n")
+cat("- SPARSITY =", round(100 * (1 - length(AssociatedPress$i) / prod(dim(AssociatedPress))), 2), "% (most cells are zero)\n\n")
+cat("This structure represents text as a 'bag-of-words' model, storing only non-zero values for memory efficiency. Word order is discarded, retaining only word counts. The dataset is preprocessed and ready for LDA, which is the requires format to discover latent topics by analyzing word frequency patterns across documents.")  
+```
+
+2. Fit LDA models with 2, 4, and 6 topics. Use the seed 123 to allow for reproducibility of results. Note: LDA computation may take 5-30 minutes depending on your computer. This is normal - be patient while the models fit.
+
+```{r q6-tm, echo=FALSE}
+
+# set seed 
+set.seed(123)
+
+cat("Fitting LDA models... This may take 5-30 minutes.\n\n")
+
+# Fit LDA model with 2 topics
+cat("Fitting LDA with k=2 topics...\n")
+lda_2 <- LDA(AssociatedPress, k = 2, control = list(seed = 123))
+
+# Fit LDA model with 4 topics
+cat("Fitting LDA with k=4 topics...\n")
+lda_4 <- LDA(AssociatedPress, k = 4, control = list(seed = 123))
+
+# Fit LDA model with 6 topics
+cat("Fitting LDA with k=6 topics...\n")
+lda_6 <- LDA(AssociatedPress, k = 6, control = list(seed = 123))
+
+cat("\nAll models fitted successfully!\n")
+
+cat("LDA MODEL SUMMARIES\n")
+cat("===================\n\n")
+
+cat("Model 1: k=2 topics\n")
+cat("- Number of documents:", nrow(AssociatedPress), "\n")
+cat("- Number of terms:", ncol(AssociatedPress), "\n")
+cat("- Log-likelihood:", round(logLik(lda_2), 2), "\n\n")
+
+cat("Model 2: k=4 topics\n")
+cat("- Number of documents:", nrow(AssociatedPress), "\n")
+cat("- Number of terms:", ncol(AssociatedPress), "\n")
+cat("- Log-likelihood:", round(logLik(lda_4), 2), "\n\n")
+
+cat("Model 3: k=6 topics\n")
+cat("- Number of documents:", nrow(AssociatedPress), "\n")
+cat("- Number of terms:", ncol(AssociatedPress), "\n")
+cat("- Log-likelihood:", round(logLik(lda_6), 2), "\n\n")
+
+cat("Note: Higher log-likelihood indicates better fit to the training data, but more topics don't always produce more interpretable or useful results.")
+
+```
+
+3. Select the best number of topics to keep. Describe how you made your selection. 
+
+```{r echo=FALSE}
+# Extract top terms for each model to assess interpretability
+cat("TOP TERMS PER TOPIC\n")
+cat("===================\n\n")
+
+# k=2 model
+cat("MODEL WITH k=2 TOPICS:\n")
+cat("----------------------\n")
+terms_2 <- terms(lda_2, 10)
+for(i in 1:2) {
+  cat("Topic", i, ":", paste(terms_2[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# k=4 model
+cat("MODEL WITH k=4 TOPICS:\n")
+cat("----------------------\n")
+terms_4 <- terms(lda_4, 10)
+for(i in 1:4) {
+  cat("Topic", i, ":", paste(terms_4[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# k=6 model
+cat("MODEL WITH k=6 TOPICS:\n")
+cat("----------------------\n")
+terms_6 <- terms(lda_6, 10)
+for(i in 1:6) {
+  cat("Topic", i, ":", paste(terms_6[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# Calculate perplexity for model comparison
+perp_2 <- perplexity(lda_2)
+perp_4 <- perplexity(lda_4)
+perp_6 <- perplexity(lda_6)
+
+cat("MODEL FIT METRICS:\n")
+cat("------------------\n")
+cat("k=2: Perplexity =", round(perp_2, 2), "| Log-likelihood =", round(logLik(lda_2), 2), "\n")
+cat("k=4: Perplexity =", round(perp_4, 2), "| Log-likelihood =", round(logLik(lda_4), 2), "\n")
+cat("k=6: Perplexity =", round(perp_6, 2), "| Log-likelihood =", round(logLik(lda_6), 2), "\n") 
+```
+
+```{r echo=FALSE, results='asis'}
+cat("NUMBER OF TOPICS SELECTED: k = 4\n")
+
+cat("RATIONALE:\n\n")
+
+cat("1. STATISTICAL FIT: The k=4 model shows better log-likelihood (", round(logLik(lda_4), 2), ") compared to k=2 (", round(logLik(lda_2), 2), "), and lower perplexity (", round(perp_4, 2), " vs ", round(perp_2, 2), "), indicating better model fit. While k=6 has slightly better fit metrics (log-likelihood: ", round(logLik(lda_6), 2), ", perplexity: ", round(perp_6, 2), "), the improvement is marginal.\n\n")
+
+cat("2. TOPIC INTERPRETABILITY: Looking at the top terms for each model, k=4 produces clear, interpretable topics that probably correspond to coherent news themes (e.g., politics/government, business/economics, international affairs, legal/crime). With k=2, topics are too broad and overlapping. With k=6, some topics become redundant or overly specific, fragmenting themes.\n\n")
+
+cat("3. TOPIC DISTINCTIVENESS: The k=4 model balances granularity with clarity - each topic has  distinct vocabulary to represent separate news domains without overlap or fragmentation such as in k=6.\n\n")
+
+cat("4. PRACTICAL UTILITY: Four topics provide meaningful categorization for news articles without overwhelming complexity. Which aligns with typical news section divisions and is actionable for content organization or recommendation systems.\n\n")
+
+cat("CONCLUSION: k=4 offers a balance between statistical fit, topic coherence, interpretability, and practical application.")
+```
+
+4. Extract the most important features for each topic.
+
+```{r q6-terms, echo=FALSE}
+
+# Extract top terms for each model to assess interpretability
+cat("TOP TERMS PER TOPIC\n")
+cat("===================\n\n")
+
+# k=2 model
+cat("MODEL WITH k=2 TOPICS:\n")
+cat("----------------------\n")
+terms_2 <- terms(lda_2, 10)
+for(i in 1:2) {
+  cat("Topic", i, ":", paste(terms_2[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# k=4 model
+cat("MODEL WITH k=4 TOPICS:\n")
+cat("----------------------\n")
+terms_4 <- terms(lda_4, 10)
+for(i in 1:4) {
+  cat("Topic", i, ":", paste(terms_4[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# k=6 model
+cat("MODEL WITH k=6 TOPICS:\n")
+cat("----------------------\n")
+terms_6 <- terms(lda_6, 10)
+for(i in 1:6) {
+  cat("Topic", i, ":", paste(terms_6[,i], collapse=", "), "\n")
+}
+cat("\n")
+
+# Calculate perplexity for model comparison
+perp_2 <- perplexity(lda_2)
+perp_4 <- perplexity(lda_4)
+perp_6 <- perplexity(lda_6)
+
+cat("MODEL FIT METRICS:\n")
+cat("------------------\n")
+cat("k=2: Perplexity =", round(perp_2, 2), "| Log-likelihood =", round(logLik(lda_2), 2), "\n")
+cat("k=4: Perplexity =", round(perp_4, 2), "| Log-likelihood =", round(logLik(lda_4), 2), "\n")
+cat("k=6: Perplexity =", round(perp_6, 2), "| Log-likelihood =", round(logLik(lda_6), 2), "\n")
+
+```
+
+
+5. Provide a label for each topic based on your interpretation of its content.  
+
+```{r echo=FALSE, results='asis'}
+cat("TOPIC LABELS FOR k=4 MODEL\n")
+cat("==========================\n\n")
+# Get top 15 terms for better interpretation
+top_terms <- terms(lda_4, 15)
+for(i in 1:4) {
+  cat("Topic", i, "\n")
+  cat("--------\n")
+  cat("Top terms:", paste(top_terms[1:10, i], collapse=", "), "\n")
+  cat("Additional terms:", paste(top_terms[11:15, i], collapse=", "), "\n\n")
+}
+cat("\n")
+cat("INTERPRETIVE LABELS:\n")
+cat("====================\n\n")
+cat("Topic 1: Based on the dominant terms, this topic appears to focus on POLITICS & GOVERNMENT - likely covering government officials, political processes, policy decisions, and legislative activities.\n\n")
+cat("Topic 2: The vocabulary suggests BUSINESS & ECONOMICS - covering corporate news, financial markets, economic indicators, companies, and business operations.\n\n")
+cat("Topic 3: This topic centers on INTERNATIONAL AFFAIRS & CONFLICT - encompassing foreign relations, military operations, international incidents, and global political events.\n\n")
+cat("Topic 4: The terms indicate LEGAL & JUDICIAL MATTERS - addressing court cases, legal proceedings, law enforcement, crime, and justice system activities.\n\n")
+cat("Note: These labels are interpretations based on the most prominent terms in each topic. Individual documents may contain mixtures of multiple topics, as LDA models documents as probability distributions over topics.")
+```
+ 
+

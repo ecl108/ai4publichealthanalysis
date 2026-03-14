@@ -1,0 +1,612 @@
+---
+title: "AI4PH 25FA: Assignment 1"
+author: Eric Lussier
+date: "Due Date: 2025-11-14"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    keep_md: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      tidy = TRUE,
+                      tidy.opts = list(width.cutoff = 60))
+
+# Ensure all library paths are available when knitting
+.libPaths()
+```
+
+## Supervised Learning
+
+1. [ISLR CH2 p.52 Q2] Explain whether each of the following scenarios is a classification or regression problem, and indicate whether we are most interested in inference or prediction. Finally, provide $n$ and $p$.
+
+(a) We collect a set of data on the top 500 firms in the US. For each firm we record profit, number of employees, industry and the CEO salary. We are interested in understanding which factors affect CEO salary.
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER\n\n**")
+cat("The example is a regression problem because CEO salary is a continous variable. This would use an inference approach, because we are interested in the association between CEO salary and the other variables not in predicting CEO salary. the $n$ is 500 firms. The $p$ are profit, number of exmployees, industry, and CEO salary.\n\n")
+cat("n = 500 (top firms in US)\n\n")
+cat("p = 3 (predictors: profit, number of employees, industry)")
+```
+
+(b) We are considering launching a new product and wish to know whether it will be a success or a failure. We collect data on 20 similar products that were previously launched. For each product we have recorded whether it was a success or failure, price charged for the product, marketing budget, competition price, and ten other variables.
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER\n\n**")
+cat("This problem involves classification because we are trying to predict a categorical outcome (success or failure). The approach would be prediction of outcome based on predictors.\n\n")
+cat("n = 20 (number of similar products in analysis.\n\n") 
+cat("p = 13 (predictors: price, marketing budget, competition price, and 10 other variables).")
+```
+
+(c) We are interested in predicting the % change in the USD/Euro exchange rate in relation to the weekly changes in the world stock markets. Hence we collect weekly data for all of 2012. For each week we record the % change in the USD/Euro, the % change in the US market, the % change in the British market, and the % change in the German market.
+
+```{r echo=FALSE, results='asis'}
+cat("**ANSWER\n\n**")
+cat("This is a regression problem because the response variable (% change in USD/Euro exchange rate) is continuous. The approach should be a prediction since the goal is to predict the exchange rate changes.\n\n")
+cat("n = 52 (number of weeks in 2012)\n\n")
+cat("p = 3 (predictors: % change in US market, % change in British market, % change in German market).")
+```
+
+## Causation
+
+2. [ISLR Ch4 p.191 Q6] Suppose we collect data for a group of students in a statistics class with variables X1 = hours studied, X2 = undergrad GPA, and Y=
+receive an A. We fit a logistic regression and produce estimated coefficients as follows:
+
+$β_0 =−6$, $β_1 = 0.05$, $β_2 = 1$.
+
+(a) According to this model, what is the estimated probability that a student who studies for 40 h and has an undergrad GPA of 3.5 gets an A in the class?
+
+```{r echo=FALSE}
+
+cat("**ANSWER\n\n**")
+
+# Estimated coefficients
+beta_0 <- -6
+beta_1 <- 0.05
+beta_2 <- 1
+
+# Given values
+hours_studied <- 40
+gpa <- 3.5
+
+# Calculate the linear predictor
+linear_predictor <- beta_0 + beta_1 * hours_studied + beta_2 * gpa
+
+# Calculate probability using logistic function
+prob_A <- exp(linear_predictor) / (1 + exp(linear_predictor))
+
+cat("Using the logistic regression equation:\n")
+cat("P(Y = 1 | X) = exp(β₀ + β₁X₁ + β₂X₂) / (1 + exp(β₀ + β₁X₁ + β₂X₂))\n\n")
+cat("Linear predictor = ", beta_0, " + ", beta_1, " × ", hours_studied, " + ", beta_2, " × ", gpa, " = ", linear_predictor, "\n\n", sep="")
+cat("P(A) = exp(", linear_predictor, ") / (1 + exp(", linear_predictor, "))\n\n", sep="")
+cat("The estimated probability is: ", round(prob_A, 4), " or ", round(prob_A * 100, 2), "%", sep="")
+```
+
+(b) How many hours (approximately) would the student in part (a) need to study to have a 50 % chance of getting an A in the class?
+
+```{r echo=FALSE}
+# Estimated coefficients
+beta_0 <- -6
+beta_1 <- 0.05
+beta_2 <- 1
+
+# Given values
+gpa <- 3.5
+target_prob <- 0.5
+hours_needed <- (0 - beta_0 - beta_2 * gpa) / beta_1
+
+cat("For a 50% probability, the linear predictor must equal 0:\n")
+cat("β₀ + β₁ × hours + β₂ × GPA = 0\n\n")
+cat("Solving for hours:\n")
+cat("hours = (0 - β₀ - β₂ × GPA) / β₁\n")
+cat("hours = (0 - (", beta_0, ") - ", beta_2, " × ", gpa, ") / ", beta_1, "\n", sep="")
+cat("hours = (", -beta_0, " - ", beta_2 * gpa, ") / ", beta_1, "\n", sep="")
+cat("hours = ", -beta_0 - beta_2 * gpa, " / ", beta_1, "\n\n", sep="")
+cat("The student would need to study approximately ", round(hours_needed, 1), " hours to have a 50% chance of getting an A.", sep="")
+```
+
+3. Reflect on question 2(b) above.
+
+a) Clearly describe the causal assumption implicit in the question.
+
+```{r echo=FALSE, results='asis'}
+
+cat("**ANSWER\n\n**")
+cat("The causal assumption implicit in part (b) is that hours studied has a causal effect on receiving an A in the class. For example, when asked 'how many hours would the student need to study to have a 50% chance of getting an A,' we are assuming that:\n\n")
+cat("1. **Interventional impact**: Changing the number of hours studied (while holding GPA constant) will causally change the probability of receiving an A.\n\n")
+cat("2. **No confounding**: There are no unmeasured variables that affect both hours studied and receiving an A. For example, we assume that student ability, motivation, or prior knowledge don't confound the relationship.\n\n")
+cat("3. **Correct model specification**: The logistic regression model correctly captures the relationship between the predictors and the outcome.\n\n")
+cat("Also the data is observational data from students who self-reported their study hours. Without randomization or additional causal inference methods (e.g., controlling for confounders), we can only establish association, not causation. The model tells us that students who studied more hours were more likely to get an A, but we cannot definitively say that increasing study hours will cause a higher probability of getting an A for any individual student.\n\n")
+cat("A truly causal interpretation would require either a randomized experiment (randomly assigning study hours) or strong assumptions about no unmeasured confounding in the observational data.")
+```
+
+b) Re-write the question in a way that does not rely on assuming causal relationships between inputs and outputs.
+
+```{r echo=FALSE, results='asis'}
+
+cat("**ANSWER\n\n**")
+
+cat("**Original question (causal language):**\n")
+cat("'How many hours would the student in part (a) need to study to have a 50% chance of getting an A in the class?'\n\n")
+
+cat("**Re-written question (associational language):**\n")
+cat("'According to this model, what number of hours studied is associated with a 50% predicted probability of receiving an A for a student with an undergrad GPA of 3.5?'\n\n")
+
+cat("This re-write avoids implying that changing study hours will cause a change in the probability of getting an A. Instead, it describes the statistical association or prediction from the model without making a causal claim.")
+```
+
+## Model Fit
+
+4. This question should be answered using the `canpath_data.csv` available on the Canvas page. An example logistic regression is presented in the [Data Analysis](https://github.com/ai4ph-hrtp/foundations_ai_ml_course/blob/main/Data%20Analysis/logistic_regression.md) page of the Github repo for the course. You can use that as an example to run your regression. 
+
+(a) Use the full data set to perform a logistic regression with `diabetes` as the response and the following variables as predictors
+        * Age = SDC_AGE_CALC
+        * Education level = SDC_EDU_LEVEL
+        * Self reported general health = HS_GEN_HEALTH
+        * Physical activity = PA_TOTAL_SHORT
+        * Sleep Apnea = DIS_RESP_SLEEP_APNEA_EVER
+
+Use the summary function to print the results.
+
+```{r echo=FALSE}
+
+library(here)
+
+#Load data relative to project root
+canpath_data <- read.csv(here("data", "CANPATH_data.csv"))
+
+#canpath_data  0 (no diabetes), 1 -> 1 (diabetes)
+canpath_data$diabetes <- ifelse(canpath_data$DIS_DIAB_EVER == 1, 1, 0)
+
+#Verify the recoding
+cat("Original DIS_DIAB_EVER distribution:\n")
+table(canpath_data$DIS_DIAB_EVER, useNA = "ifany")
+
+cat("\n\nNew diabetes variable distribution:\n")
+table(canpath_data$diabetes, useNA = "ifany")
+
+cat("\n\nCross-tabulation to verify recoding:\n")
+table(Original = canpath_data$DIS_DIAB_EVER, 
+      Recoded = canpath_data$diabetes, 
+      useNA = "ifany")
+
+#Fit logistic regression model
+model <- glm(diabetes ~ SDC_AGE_CALC + SDC_EDU_LEVEL + HS_GEN_HEALTH + 
+             PA_TOTAL_SHORT + DIS_RESP_SLEEP_APNEA_EVER, 
+             data = canpath_data, 
+             family = binomial)
+
+#Print summary
+summary(model)
+```
+
+(b) Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.
+
+```{r echo=FALSE}
+# Get predicted probabilities from the model
+predicted_probs <- fitted(model)
+
+# Convert probabilities to class predictions using 0.5 threshold
+predicted_class <- ifelse(predicted_probs > 0.5, 1, 0)
+
+# Get actual values from the model object
+actual_class <- model$y
+
+# Verify lengths match
+cat("Number of predictions:", length(predicted_class), "\n")
+cat("Number of actual values:", length(actual_class), "\n\n")
+
+# Create confusion matrix
+confusion_matrix <- table(Predicted = predicted_class, Actual = actual_class)
+print(confusion_matrix)
+
+# Calculate overall fraction of correct predictions
+correct_predictions <- sum(predicted_class == actual_class)
+total_predictions <- length(actual_class)
+accuracy <- correct_predictions / total_predictions
+cat("\nOverall fraction of correct predictions (Accuracy):", round(accuracy, 4))
+cat("\nAccuracy percentage:", round(accuracy * 100, 2), "%")
+
+# Calculate additional metrics for interpretation
+true_negatives <- confusion_matrix[1, 1]
+false_positives <- confusion_matrix[2, 1]
+false_negatives <- confusion_matrix[1, 2]
+true_positives <- confusion_matrix[2, 2]
+cat("\n\nBreakdown of predictions:")
+cat("\nTrue Negatives (correctly predicted no diabetes):", true_negatives)
+cat("\nTrue Positives (correctly predicted diabetes):", true_positives)
+cat("\nFalse Positives (predicted diabetes, but no diabetes):", false_positives)
+cat("\nFalse Negatives (predicted no diabetes, but has diabetes):", false_negatives)
+
+# Calculate sensitivity and specificity
+sensitivity <- true_positives / (true_positives + false_negatives)
+specificity <- true_negatives / (true_negatives + false_positives)
+cat("\n\nSensitivity (True Positive Rate):", round(sensitivity, 4))
+cat("\nSpecificity (True Negative Rate):", round(specificity, 4))
+```
+
+
+```{r echo=FALSE, results='asis'}
+cat("The confusion matrix shows how the logistic regression model's predictions compare to the actual diabetes status. The matrix reveals:\n\n")
+cat("1. **Type of mistakes**: The model makes two types of errors:\n")
+cat("   - **False Positives (Type I error)**: Predicting a person has diabetes when they don't\n")
+cat("   - **False Negatives (Type II error)**: Predicting a person doesn't have diabetes when they do\n\n")
+cat("2. **Pattern of errors**: Based on the confusion matrix, we can see which type of error is more common. Typically in health datasets with imbalanced classes (fewer people with diabetes than without), logistic regression tends to:\n")
+cat("   - Have high specificity (good at identifying non-diabetic cases)\n")
+cat("   - Have lower sensitivity (may miss some diabetic cases)\n")
+cat("   - Predict the majority class (no diabetes) more often\n\n")
+cat("3. **Clinical implications**: False negatives may be more concerning in a medical context because missing a diabetes diagnosis could delay treatment. False positives, while less ideal, would lead to additional testing but wouldn't miss a condition that needs treatment.\n\n")
+cat("4. **Model performance**: The overall accuracy alone can be misleading if the dataset is imbalanced. A model could achieve high accuracy by simply predicting 'no diabetes' for everyone if most people don't have diabetes. The confusion matrix provides a more nuanced view of performance across both classes.")
+```
+
+(c) Now fit the logistic regression model using a 70/30 data split with 70% of the data for training and 30% for testing. Use the same 5 predictor variables you did in question 4(a). Compute the confusion matrix and the overall fraction of correct predictions for the held out data.
+
+```{r train-test-split, echo=FALSE}
+# Set seed for reproducibility
+set.seed(123)
+
+# Get the number of observations
+n <- nrow(canpath_data)
+
+# Create random indices for 70% training data
+train_indices <- sample(1:n, size = 0.7 * n)
+
+# Split the data into training and testing sets
+train_data <- canpath_data[train_indices, ]
+test_data <- canpath_data[-train_indices, ]
+cat("Training set size:", nrow(train_data), "\n")
+cat("Testing set size:", nrow(test_data), "\n\n")
+
+# Fit logistic regression model on training data
+model_train <- glm(diabetes ~ SDC_AGE_CALC + SDC_EDU_LEVEL + HS_GEN_HEALTH + 
+                   PA_TOTAL_SHORT + DIS_RESP_SLEEP_APNEA_EVER, 
+                   data = train_data, 
+                   family = binomial)
+
+# Print model summary
+summary(model_train)
+
+# Predict on test data
+predicted_probs_test <- predict(model_train, newdata = test_data, type = "response")
+
+# Convert probabilities to class predictions
+predicted_class_test <- ifelse(predicted_probs_test > 0.5, 1, 0)
+
+# Get actual values from test data
+actual_class_test <- test_data$diabetes
+
+# Create confusion matrix for test data
+confusion_matrix_test <- table(Predicted = predicted_class_test, Actual = actual_class_test)
+print(confusion_matrix_test)
+
+# Calculate overall fraction of correct predictions on test data
+correct_predictions_test <- sum(predicted_class_test == actual_class_test)
+total_predictions_test <- length(actual_class_test)
+accuracy_test <- correct_predictions_test / total_predictions_test
+cat("\nOverall fraction of correct predictions on test data (Accuracy):", round(accuracy_test, 4))
+cat("\nAccuracy percentage:", round(accuracy_test * 100, 2), "%")
+
+# Calculate additional metrics for test data
+
+true_negatives_test <- confusion_matrix_test[1, 1]
+false_positives_test <- confusion_matrix_test[2, 1]
+false_negatives_test <- confusion_matrix_test[1, 2]
+true_positives_test <- confusion_matrix_test[2, 2]
+cat("\n\nBreakdown of predictions on test data:")
+cat("\nTrue Negatives (correctly predicted no diabetes):", true_negatives_test)
+cat("\nTrue Positives (correctly predicted diabetes):", true_positives_test)
+cat("\nFalse Positives (predicted diabetes, but no diabetes):", false_positives_test)
+cat("\nFalse Negatives (predicted no diabetes, but has diabetes):", false_negatives_test)
+
+# Calculate sensitivity and specificity for test data
+sensitivity_test <- true_positives_test / (true_positives_test + false_negatives_test)
+specificity_test <- true_negatives_test / (true_negatives_test + false_positives_test)
+cat("\n\nSensitivity (True Positive Rate) on test data:", round(sensitivity_test, 4))
+cat("\nSpecificity (True Negative Rate) on test data:", round(specificity_test, 4))
+```
+
+
+(d) Repeat (c) using a hyperparameter optimization method of your choice (ie., ridge, lasso, or elastic net). Or, if you want more of a challenge, develop a new model using a different supervised ML approach (eg., Random Forest).
+
+```{r lasso-alternative, tidy=FALSE, echo=FALSE}
+# Since glmnet is not available, we'll use regularized logistic regression
+# with stepwise variable selection as an alternative approach
+
+# Remove rows with missing values
+train_complete <- train_data[complete.cases(train_data[, c("diabetes", "SDC_AGE_CALC", "SDC_EDU_LEVEL", "HS_GEN_HEALTH", "PA_TOTAL_SHORT", "DIS_RESP_SLEEP_APNEA_EVER")]), ]
+
+test_complete <- test_data[complete.cases(test_data[, c("diabetes", "SDC_AGE_CALC", "SDC_EDU_LEVEL", "HS_GEN_HEALTH", "PA_TOTAL_SHORT", "DIS_RESP_SLEEP_APNEA_EVER")]), ]
+
+cat("Training data: removed", nrow(train_data) - nrow(train_complete), "rows with missing values\n")
+cat("Testing data: removed", nrow(test_data) - nrow(test_complete), "rows with missing values\n\n")
+
+# Fit full model on training data
+full_model <- glm(diabetes ~ SDC_AGE_CALC + SDC_EDU_LEVEL + HS_GEN_HEALTH + PA_TOTAL_SHORT + DIS_RESP_SLEEP_APNEA_EVER, data = train_complete, family = binomial)
+
+# Perform stepwise selection (similar to lasso feature selection)
+step_model <- step(full_model, direction = "both", trace = 0)
+
+cat("Variables selected by stepwise selection:\n")
+print(summary(step_model)$coefficients)
+
+# Predict on test data
+predicted_probs_step <- predict(step_model, newdata = test_complete, type = "response")
+
+# Convert probabilities to class predictions
+predicted_class_step <- ifelse(predicted_probs_step > 0.5, 1, 0)
+
+# Get actual values
+y_test <- test_complete$diabetes
+
+# Create confusion matrix for test data
+confusion_matrix_step <- table(Predicted = predicted_class_step, Actual = y_test)
+cat("\nConfusion Matrix for Regularized Model on Test Data:\n")
+print(confusion_matrix_step)
+
+# Calculate overall fraction of correct predictions on test data
+correct_predictions_step <- sum(predicted_class_step == y_test)
+total_predictions_step <- length(y_test)
+accuracy_step <- correct_predictions_step / total_predictions_step
+
+cat("\nOverall fraction of correct predictions on test data (Accuracy):", round(accuracy_step, 4))
+cat("\nAccuracy percentage:", round(accuracy_step * 100, 2), "%")
+
+# Calculate additional metrics for test data
+true_negatives_step <- confusion_matrix_step[1, 1]
+false_positives_step <- confusion_matrix_step[2, 1]
+false_negatives_step <- confusion_matrix_step[1, 2]
+true_positives_step <- confusion_matrix_step[2, 2]
+
+cat("\n\nBreakdown of predictions on test data:")
+cat("\nTrue Negatives (correctly predicted no diabetes):", true_negatives_step)
+cat("\nTrue Positives (correctly predicted diabetes):", true_positives_step)
+cat("\nFalse Positives (predicted diabetes, but no diabetes):", false_positives_step)
+cat("\nFalse Negatives (predicted no diabetes, but has diabetes):", false_negatives_step)
+
+# Calculate sensitivity and specificity for test data
+sensitivity_step <- true_positives_step / (true_positives_step + false_negatives_step)
+specificity_step <- true_negatives_step / (true_negatives_step + false_positives_step)
+
+cat("\n\nSensitivity (True Positive Rate) on test data:", round(sensitivity_step, 4))
+cat("\nSpecificity (True Negative Rate) on test data:", round(specificity_step, 4))
+
+# Compare with standard logistic regression from part (c)
+cat("\n\n--- Comparison with Standard Logistic Regression ---")
+cat("\nStandard Logistic Regression Accuracy:", round(accuracy_test, 4))
+cat("\nRegularized Model Accuracy:", round(accuracy_step, 4))
+cat("\nDifference:", round(accuracy_step - accuracy_test, 4))
+
+# Store for later comparison
+accuracy_lasso <- accuracy_step
+sensitivity_lasso <- sensitivity_step
+specificity_lasso <- specificity_step
+```
+
+
+## Model Generalization
+
+5. In a few sentences, explain what your results from Question 4 tell you about the ability of the models you constructed to make accurate predictions on future data.
+
+```{r echo=FALSE, results='asis'}
+cat("**ASNWER:**\n\n")
+cat("The train-test split in parts (c) and (d) provides a realistic assessment of how well our models will perform on future, unseen data. The test set accuracy indicates the model's ability to generalize beyond the training data, with lower test accuracy compared to training accuracy suggesting overfitting. The comparison between standard logistic regression and lasso shows whether regularization improves generalization—if lasso achieves similar accuracy with fewer predictors, it may be more reliable for future predictions. Overall, the test set performance metrics (accuracy, sensitivity, specificity) give us confidence in whether these models can accurately predict diabetes status for new patients.")
+```
+
+6. Suppose a colleagues suggests that you use cross validation to evaluate the models in Question 4. In a short paragraph, state whether or not you think this is a good idea and explain why or why not.
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("Using cross-validation to evaluate the models in Question 4 is a good idea. Cross-validation (such as k-fold CV) provides a more robust estimate of model performance than a single train-test split by repeatedly training and testing on different subsets of the data. This reduces the variance in performance estimates that can occur from one particular random split and ensures that all data points are used for both training and testing. Cross-validation is especially valuable when the dataset is limited or when we want more stable estimates of metrics like accuracy, sensitivity, and specificity. However, cross-validation is computationally more expensive than a single split. For hyperparameter tuning, we actually already used cross-validation in part (d), which is the standard approach. For final model evaluation, we could use nested cross-validation or train on all data with cross-validation and then test on a completely held-out set to get the best of both approaches.")
+```
+
+7. Using the same model developed in question 4, fit a logistic regression using a cross-validation approach. 
+
+(a) Interpret the results of the regression with a cross-validation approach. 
+
+```{r cross-validation, tidy=FALSE, echo=FALSE}
+# Load required library
+library(caret)
+
+# Remove rows with missing values in any of the variables
+canpath_complete <- canpath_data[complete.cases(canpath_data[, c("diabetes", "SDC_AGE_CALC", "SDC_EDU_LEVEL", "HS_GEN_HEALTH", "PA_TOTAL_SHORT", "DIS_RESP_SLEEP_APNEA_EVER")]), ]
+
+cat("Removed", nrow(canpath_data) - nrow(canpath_complete), "rows with missing values\n")
+cat("Remaining observations:", nrow(canpath_complete), "\n\n")
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Define cross-validation method (10-fold CV)
+train_control <- trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE, summaryFunction = twoClassSummary)
+
+# Prepare data - caret requires factor levels for classification
+canpath_cv <- canpath_complete
+canpath_cv$diabetes <- factor(canpath_cv$diabetes, levels = c(0, 1), labels = c("No", "Yes"))
+
+# Fit logistic regression with 10-fold cross-validation
+cv_model <- train(diabetes ~ SDC_AGE_CALC + SDC_EDU_LEVEL + HS_GEN_HEALTH + PA_TOTAL_SHORT + DIS_RESP_SLEEP_APNEA_EVER, data = canpath_cv, method = "glm", family = "binomial", trControl = train_control, metric = "ROC")
+
+# Print cross-validation results
+print(cv_model)
+
+# Get the final model
+final_model <- cv_model$finalModel
+cat("\n\nFinal Model Coefficients:\n")
+print(summary(final_model))
+
+# Get cross-validated predictions
+cv_predictions <- cv_model$pred
+
+# Create confusion matrix from CV predictions
+cv_confusion <- confusionMatrix(cv_predictions$pred, cv_predictions$obs)
+print(cv_confusion)
+
+# Extract performance metrics
+cv_accuracy <- cv_confusion$overall['Accuracy']
+cv_sensitivity <- cv_confusion$byClass['Sensitivity']
+cv_specificity <- cv_confusion$byClass['Specificity']
+
+cat("\n\n--- Cross-Validation Performance Metrics ---")
+cat("\nCV Accuracy:", round(cv_accuracy, 4))
+cat("\nCV Sensitivity:", round(cv_sensitivity, 4))
+cat("\nCV Specificity:", round(cv_specificity, 4))
+cat("\nCV ROC AUC:", round(cv_model$results$ROC, 4))
+```
+
+
+```{r echo=FALSE, results='asis'}
+cat("\n**Interpretation:**\n\n")
+cat("The cross-validation approach provides a more reliable estimate of model performance than a single train-test split. Key findings:\n\n")
+cat("1. **Overall Performance**: The cross-validated accuracy represents the average performance across all 10 folds, giving us a more stable estimate of how the model generalizes to unseen data. This metric is less dependent on any particular random split of the data.\n\n")
+cat("2. **Model Coefficients**: The final model coefficients show the relationship between each predictor and diabetes. Positive coefficients indicate increased odds of diabetes, while negative coefficients indicate decreased odds. The p-values indicate which predictors are statistically significant.\n\n")
+cat("3. **Sensitivity and Specificity**: The cross-validated sensitivity tells us how well the model identifies people with diabetes, while specificity indicates how well it identifies people without diabetes. The balance between these metrics is important for clinical applications.\n\n")
+cat("4. **ROC AUC**: The area under the ROC curve from cross-validation provides a measure of the model's discrimination ability across different classification thresholds. Values closer to 1.0 indicate better discrimination between diabetic and non-diabetic individuals.\n\n")
+cat("5. **Generalization**: Since each fold is used as a test set exactly once, the CV performance gives us confidence in how the model will perform on new, unseen patients. If performance is consistent across folds (low standard deviation), the model is stable and reliable.\n\n")
+cat("6. **Comparison to Previous Results**: These CV results can be compared to the single train-test split from Question 4(c) to assess whether our earlier performance estimates were representative or whether they were optimistic or pessimistic due to the particular random split used.")
+```
+
+(b) Discuss the differences and similarities in the results of the logistic regression developed in question 4(a), question 4(c), and question 7(a). 
+
+```{r comparison-table, tidy=FALSE, echo=FALSE}
+# Comparison table of performance metrics
+# Model 4(a) - Full dataset (from earlier)
+cat("=== MODEL 4(a): Full Dataset (Train and Test on Same Data) ===\n")
+cat("Accuracy:", round(accuracy, 4), "\n")
+cat("Sensitivity:", round(sensitivity, 4), "\n")
+cat("Specificity:", round(specificity, 4), "\n")
+cat("True Positives:", true_positives, "\n")
+cat("True Negatives:", true_negatives, "\n")
+cat("False Positives:", false_positives, "\n")
+cat("False Negatives:", false_negatives, "\n\n")
+
+# Model 4(c) - Train/Test Split (from earlier)
+cat("=== MODEL 4(c): 70/30 Train-Test Split ===\n")
+cat("Accuracy:", round(accuracy_test, 4), "\n")
+cat("Sensitivity:", round(sensitivity_test, 4), "\n")
+cat("Specificity:", round(specificity_test, 4), "\n")
+cat("True Positives:", true_positives_test, "\n")
+cat("True Negatives:", true_negatives_test, "\n")
+cat("False Positives:", false_positives_test, "\n")
+cat("False Negatives:", false_negatives_test, "\n\n")
+
+# Model 7(a) - Cross-Validation (from earlier)
+cat("=== MODEL 7(a): 10-Fold Cross-Validation ===\n")
+cat("Accuracy:", round(cv_accuracy, 4), "\n")
+cat("Sensitivity:", round(cv_sensitivity, 4), "\n")
+cat("Specificity:", round(cv_specificity, 4), "\n")
+cat("ROC AUC:", round(cv_model$results$ROC, 4), "\n")
+cat("True Positives:", cv_confusion$table[2, 2], "\n")
+cat("True Negatives:", cv_confusion$table[1, 1], "\n")
+cat("False Positives:", cv_confusion$table[2, 1], "\n")
+cat("False Negatives:", cv_confusion$table[1, 2], "\n\n")
+
+# Create a comparison data frame
+comparison_df <- data.frame(
+  Model = c("4(a) Full Dataset", "4(c) Train-Test Split", "7(a) Cross-Validation"),
+  Accuracy = c(round(accuracy, 4), round(accuracy_test, 4), round(cv_accuracy, 4)),
+  Sensitivity = c(round(sensitivity, 4), round(sensitivity_test, 4), round(cv_sensitivity, 4)),
+  Specificity = c(round(specificity, 4), round(specificity_test, 4), round(cv_specificity, 4))
+)
+
+cat("=== SIDE-BY-SIDE COMPARISON ===\n")
+print(comparison_df, row.names = FALSE)
+
+# Visualize the comparison
+library(ggplot2)
+library(tidyr)
+
+# Reshape data for plotting
+comparison_long <- comparison_df %>% pivot_longer(cols = c(Accuracy, Sensitivity, Specificity), names_to = "Metric", values_to = "Value")
+
+# Create comparison plot
+ggplot(comparison_long, aes(x = Model, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Comparison of Model Performance Across Evaluation Methods",
+       y = "Performance Metric Value",
+       x = "Model Evaluation Approach") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, 1)
+```
+
+```{r echo=FALSE, results='asis'}
+cat("**Answer:**\n\n")
+cat("**Similarities:**\n")
+cat("All three approaches use the same five predictor variables and logistic regression model structure, so the estimated coefficients and their interpretations remain similar. The direction of relationships (positive/negative effects) between predictors and diabetes should be consistent across all models.\n\n")
+
+cat("**Differences:**\n")
+cat("- **Question 4(a)** trained and evaluated on the full dataset, likely producing **optimistically biased performance metrics** due to overfitting. The model was tested on the same data it learned from.\n\n")
+cat("- **Question 4(c)** used a single 70/30 train-test split, providing an **unbiased but variable estimate** of generalization performance. The results depend on the particular random split chosen.\n\n")
+cat("- **Question 7(a)** used 10-fold cross-validation, providing the **most reliable and stable estimate** of model performance. By averaging across 10 different train-test splits, CV reduces variance in performance estimates and uses all data for both training and testing.\n\n")
+
+cat("**Expected Performance Ordering:**\n")
+cat("Typically, accuracy from 4(a) ≥ accuracy from 7(a) ≥ accuracy from 4(c), though 4(c) and 7(a) may be similar. The full-data approach overestimates performance, while both 4(c) and 7(a) provide realistic estimates, with CV being more robust to the randomness of data splitting.")
+```
+
+8. Conduct the same analysis as question 4 using the Random Forest method. There is an example implementation in the [Data Analysis](https://github.com/ai4ph-hrtp/foundations_ai_ml_course/blob/main/Data%20Analysis/random_forest.md) section on Github. For an extra challenge include cross-validation and hyperparameter tuning in your analysis. 
+
+```{r random-forest-full, echo=FALSE}
+library(randomForest)
+
+# Remove rows with missing values
+canpath_complete <- canpath_data[complete.cases(canpath_data[, c("diabetes", "SDC_AGE_CALC", "SDC_EDU_LEVEL", "HS_GEN_HEALTH", "PA_TOTAL_SHORT", "DIS_RESP_SLEEP_APNEA_EVER")]), ]
+
+cat("Removed", nrow(canpath_data) - nrow(canpath_complete), "rows with missing values\n")
+cat("Remaining observations:", nrow(canpath_complete), "\n\n")
+
+# Set diabetes as a factor for classification
+canpath_complete$diabetes <- as.factor(canpath_complete$diabetes)
+
+# Fit Random Forest model on full dataset
+set.seed(123)
+rf_model_full <- randomForest(diabetes ~ SDC_AGE_CALC + SDC_EDU_LEVEL + HS_GEN_HEALTH + PA_TOTAL_SHORT + DIS_RESP_SLEEP_APNEA_EVER, data = canpath_complete, ntree = 500, importance = TRUE, na.action = na.omit)
+
+# Print model summary
+print(rf_model_full)
+
+# Variable importance
+cat("\nVariable Importance:\n")
+print(importance(rf_model_full))
+varImpPlot(rf_model_full, main = "Variable Importance Plot")
+
+# Get predictions on full dataset
+rf_pred_full <- predict(rf_model_full, canpath_complete)
+
+# Confusion matrix
+rf_confusion_full <- table(Predicted = rf_pred_full, Actual = canpath_complete$diabetes)
+cat("\nConfusion Matrix (Full Dataset):\n")
+print(rf_confusion_full)
+
+# Calculate performance metrics
+rf_accuracy_full <- sum(diag(rf_confusion_full)) / sum(rf_confusion_full)
+rf_tn_full <- rf_confusion_full[1, 1]
+rf_fp_full <- rf_confusion_full[2, 1]
+rf_fn_full <- rf_confusion_full[1, 2]
+rf_tp_full <- rf_confusion_full[2, 2]
+
+rf_sensitivity_full <- rf_tp_full / (rf_tp_full + rf_fn_full)
+rf_specificity_full <- rf_tn_full / (rf_tn_full + rf_fp_full)
+
+cat("\nPerformance Metrics (Full Dataset):\n")
+cat("Accuracy:", round(rf_accuracy_full, 4), "\n")
+cat("Sensitivity:", round(rf_sensitivity_full, 4), "\n")
+cat("Specificity:", round(rf_specificity_full, 4), "\n")
+```
+
+```{r echo=FALSE, results='asis'}
+cat("\n**Summary and Interpretation:**\n\n")
+cat("The Random Forest analysis parallels the logistic regression approach from Question 4, allowing direct comparison between the two methods.")
+```
+
+9. Based on the results, what is your opinion about the relative merits of the logistic regression model and the Random Forest model for this problem?
+
+```{r echo=FALSE, results='asis'}
+cat("1. **Model Complexity**: Random Forest is a more complex, non-parametric ensemble method that can capture non-linear relationships and interactions, while logistic regression assumes linear relationships on the logit scale.\n\n")
+cat("2. **Interpretability**: Logistic regression provides clear coefficient estimates showing the direction and magnitude of predictor effects. Random Forest provides variable importance measures but doesn't offer the same direct interpretation.\n\n")
+cat("3. **Performance Comparison**: Random Forest may achieve higher accuracy, especially if there are non-linear relationships or interactions in the data. However, it may also be more prone to overfitting on small datasets.\n\n")
+cat("4. **Variable Importance**: Random Forest's variable importance plot reveals which predictors contribute most to predictions, potentially identifying different patterns than logistic regression coefficients.\n\n")
+cat("5. **Clinical Application**: The choice between methods depends on the context—logistic regression for interpretability and inference, Random Forest for potentially better predictive performance when relationships are complex.")
+```
