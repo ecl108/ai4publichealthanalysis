@@ -1,0 +1,169 @@
+---
+title: "AI4PH - Introduction to Quantitative Perspectives on Measuring Equity"
+author: "Eric Lussier"
+date: "2026-04-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+echo = TRUE,
+message = FALSE,
+warning = FALSE
+)
+
+set.seed(23102024) # Make all random draws reproducible
+packages <- c("tidyverse", "here", "broom", "knitr", "kableExtra", "readxl",
+"readdr","tidyverse", "rmarkdown","compiler", "lme4", "MASS",
+"corpcor", "dplyr", "arm", "ggplot2", "readr",
+"decomp", "rineq", "ineq", "IC2") #<<
+invisible(lapply(packages, function(xxx) suppressMessages(require(xxx, character.only = TRUE,
+quietly=TRUE, warn.conflicts = FALSE))))
+
+dat<-read.csv("ai_repdata.csv")
+```
+
+***EXERCISE 1***
+
+**Q.1.1. In the text, we can read that “AI technology is conceptualized as a form of capital that can substitute for or complement traditional forms of labor. We also consider the accumulation of AI capital stock and its distribution across sectors and classes in society. This approach enables us to capture the complex dynamics of how AI technology and capital stock accumulation contribute to wealth inequality. By integrating our extended Solow-Swan model with income and wealth distribution theories, we offer a novel theoretical framework for exploring the socioeconomic implications of AI”. What do you think is the aim of this study? Identify inequalities or inequities?**
+
+Skare et al. are primarily aiming to identify and explain inequalities, not inequities. They treat AI as a new form of capital and study how its accumulation and distribution affect wealth inequality across sectors and social classes, using an extended Solow–Swan growth model combined with income and wealth distribution theories. Their focus is on patterns and mechanisms of unequal wealth outcomes (who gains, who loses, how AI capital and returns are concentrated), rather than explicitly assessing whether those differences are unfair, avoidable, or rooted in unjust structures, which would be the core of an inequity analysis.
+
+***Q.1.2. The authors presented five (5 hypotheses) in relation to wealth inequality and AI. After, the authors describe a series of measures to assess the relationship of what they call AI stock and AI capital (to test their hypotheses). Most of the results are correlations and outputs for panel-corrected standard error linear regressions (some extra information here).***
+
+**a) How do we interpret the β coefficients presented in Table 3, from the linear regressions in the relationship between wealth inequality, proxyed by gross national income (GNI) and the AI technology, the AI capital and measures of unemployment? Note, only interpret the coefficients from Model (2) in the third column, and from Model (7) in the last column.**
+
+In Table 3 the authors use log‑differenced variables, so each β is interpreted as the effect of a 1% change in the predictor on the percentage change in GNI, holding other variables constant.
+
+- **Model (2), third column (ΔA – AI technology level):**  
+The β coefficient on ΔA is positive and statistically significant (about 0.0293). This means that a 1% increase in AI technology (their AI level indicator) is associated with roughly a 0.029% increase in GNI, after adjusting for the other variables. Thus, improvements in AI technology are linked to income growth, which in this framework is also tied to rising wealth inequality when these gains are concentrated within existing wealth holders.
+
+- **Model (7), last column (AI capital and unemployment):**  
+  In Model (7) Skare et al. includes AI capital stock per worker and unemployment together. A positive β on AI capital per worker means that, for each 1% increase in AI capital per worker, GNI rises by the corresponding percentage given by the coefficient (the reported value in the last column), again conditional on the other controls.  A negative β on unemployment means that higher unemployment is associated with lower GNI growth: for each 1% increase in unemployment (log terms), GNI falls by the percentage given by that coefficient. 
+  
+Therefore, the β coefficients in Model (2) and Model (7) say: advances in AI technology and higher AI capital per worker are linked to higher GNI, while higher unemployment is linked to lower GNI, with all effects interpreted as percentage changes because of the use of log‑difference in measurements.
+
+**b) Since outputs form linear regressions can be interpreted as “risk differences”, can we consider this regression results as absolute inequalities? Yes, No? Briefly but precisely (no more than 2 sentences) justify your answer.**
+
+In this paper, both the outcome (e.g., GNI) and the predictors (e.g., AI technology, AI capital) are used as log‑differences, so the β’s tells the percentage change in GNI associated with a 1% change in the predictor (an elasticity‑type, relative effect), not an absolute difference in a risk or rate, which is what is usually meant by an “absolute inequality” or “risk difference.”
+
+**c) Given what we have learnt during the course, will these measures be sufficient to justify the claim of the authors “Advancements in AI technology, signified by an increase in AI levels, have stimulated GNI growth. However, the concentration of these advancements among specific individuals or groups may amplify wealth inequality.” ? Yes, No? Briefly but precisely (no more than 3 sentences) justify your answer.**
+
+No. The regressions show associations between AI measures and changes in GNI or wealth inequality but do not establish causality or document how AI gains are actually concentrated among specific groups. To support a distributional claim, the analysis would need to explore group‑level analyses (e.g., top 1% vs rest), causal identification strategies, or decomposition methods that explicitly trace how AI‑related gains were distributed across the wealth groups.
+
+***EXERCISE 2***
+
+***Q.2.1. Crude Concentration Index Estimation***
+
+**a) Estimate the inequality concentration index unadjusted for the GNI (*gini1*) as socioeconomic variable and for each AI capital (ai_stock) and AI technology level (*ai_share*).**
+
+```{r echo=FALSE}
+mod0<- rineq::ci(dat$gini1, dat$ai_share, 
+method = "direct")
+
+summary(mod0)
+
+mod1<- rineq::ci(dat$gini1, dat$ai_stock, 
+method = "direct")
+
+summary(mod1)
+```
+
+Using the Gini index (*gini1*) as the socioeconomic ranking variable, the unadjusted concentration index for AI technology level (*ai_share*) is –0.0291 (95% CI: –0.0630 to 0.0049), indicating no clear evidence of socioeconomic inequality in AI technology because the confidence interval includes zero. In contrast, the concentration index for AI capital (*ai_stock*) is 0.6023 (95% CI: 0.5422 to 0.6624), showing a large, statistically significant pro‑rich inequality, with AI capital highly concentrated among countries with higher wealth inequality.
+
+**b) Estimate the inequality concentration index unadjusted for the log-transformed covariates GNI (*dlgini1*) as socioeconomic variable and for each AI capital (*dlaistock*) and AI technology level (*dlai_share*). Compare these results to the output from Table 3, column 1**
+
+```{r echo=FALSE}
+mod0a<- rineq::ci(dat$dlgini1, dat$dlai_share,
+method = "direct")
+
+summary(mod0a)
+
+mod1a<- rineq::ci(dat$dlgini1, dat$dlaistock,
+method = "direct")
+
+summary(mod1a)
+```
+
+Using log‑GNI as the socioeconomic rank, *dlai_share* has a significant pro‑poor concentration index (–0.1987), while *dlaistock* shows no clear inequality (CI includes 0). These patterns contrast with Table 3, column 1, where both AI technology and AI capital are positively associated with GNI growth, indicating that association with GNI does not translate into a clear pro‑rich distribution of AI changes.
+
+**c) What is your interpretation of the calculated inequality concentration index in this context?**
+
+The concentration indices show that changes in AI technology (*dlai_share*) are unequally distributed in a pro‑poor direction, with larger AI‑technology increases occurring in countries with lower GNI growth, while changes in AI capital (dlaistock) are not clearly concentrated by GNI, since its index is near zero with a confidence interval that crosses zero. In this context, the inequality concentration index is telling us who (by GNI rank) is experiencing greater changes in AI variables, and it suggests that AI technology growth is not disproportionately captured by higher‑GNI countries, whereas AI capital growth appears roughly evenly spread across the GNI distribution.
+
+***Q.2.2. Interpretation of the Concentration Curve***
+
+**a) Graph the inequality concentration index unadjusted for each socioeconomic variable. Comment on what you see in each graph and indicate where AI measures concentrate.**
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+plot(mod0)
+title(sub = "AI share")
+plot(mod1)
+title(sub = "AI Stock")
+par(mfrow=c(1,2))
+plot(mod0a)
+title(sub = "AI share")
+plot(mod1a)
+title(sub = "AI Stock")
+```
+
+The first pair of curves (using *gini1* as the rank variable) shows AI share lying only slightly above the line of equality, indicating minimal pro‑rich concentration, while AI stock lies clearly above the line, indicating strong concentration among higher‑inequality (richer) countries. In the second pair (using *dlgini1* as the rank variable), the AI share curve falls just below the equality line, suggesting mildly pro‑poor changes in AI technology, whereas AI stock lies far above the line, confirming that increases in AI capital are heavily concentrated among countries with higher GNI growth.
+
+***Q.2.3. Considerations of Unemployment - Unemployment, as presented by the authors is “measured by the World Bank estimation of people without work but available for seeking employment”, here the variable unem.***
+
+**a) Since unemployment may be related to the GNI and since one of the claims from the authors is that AI may affect heterogeneously the labor market, out of curiosity, lets estimate the concentration index for unemployment and the two measures of AI development, each AI capital (*dlaistock*) and AI technology level (*dlai_share*).**
+
+```{r echo=FALSE}
+mod2a<- rineq::ci(dat$unem, dat$ai_share,
+method = "direct")
+
+summary(mod2a)
+
+mod2b<- rineq::ci(dat$unem, dat$ai_stock,
+method = "direct")
+
+summary(mod2b)
+```
+
+Using unemployment (*unem*) as the ranking variable, the concentration index for AI technology (*ai_share*) is 0.0016 (95% CI: –0.0295 to 0.0328), which is essentially zero and indicates no clear pattern in how AI technology is distributed across different unemployment levels. In contrast, the concentration index for AI capital (*ai_stock*) is –0.5584 (95% CI: –0.6277 to –0.4892), a large and statistically significant negative value showing that AI capital is strongly concentrated in settings with lower unemployment countries  with less unemployment hold a disproportionate share of AI capital.
+
+**b) Plot the concentration curve for the relationship between unem and dlaistock, and also for unem and dlai_share.**
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+plot(mod2a)
+title(sub = "AI share")
+plot(mod2b)
+title(sub = "AI Stock")
+```
+
+The concentration curve for *unem* vs. *dlai_share* lies almost on the 45° line, confirming that changes in AI technology are not systematically concentrated in countries with higher or lower unemployment. In contrast, the curve for *unem* vs. *dlaistock* sits well above the line of equality, indicating that increases in AI capital are strongly concentrated in low‑unemployment settings and much less in high‑unemployment ones.
+
+**Q.2.4. Overall Interpretation of Results - The authors included that “The observed association between the accumulation of AI capital stock and rising wealth inequality emphasizes the importance of policy interventions. Policymakers should consider measures that ensure a more equitable distribution of AI gains across all socioeconomic strata. This may involve efforts to democratize access to AI technologies and devise mechanisms for a more balanced distribution of AI capital.” Do you think that the results form the paper alone and or the results from our pedagogical exercise help to support this claim? Briefly but precisely (no more than 3 sentences) justify your answer.**
+
+No. Skare et al.’s panel regressions and my inequality/concentration analyses show associations between AI measures, GNI, and wealth inequality, but do not determine if AI capital causes rising wealth inequality or identify which specific policy levers could impact that relationship. My concentration indices also reveal varying distributional patterns (e.g., strong pro‑rich concentration for some AI measures, pro‑poor or null patterns for others), which makes the broad policy prescription about “democratizing AI gains” potentially applicable but is not sufficient alone to justify broad application.
+
+***EXCERISE 3***
+
+**Q3.1. DATA** 
+
+**According to the previous paper and in general, list at least three (3) considerations when constructing representative, accurate, relevant, and sufficient data. Hint: Think on what would you do to prevent the “reproduction of existing biases” or ending up with “discriminatory” data.**
+
+**1.** Ensure coverage and representativeness of the underlying population (e.g., include low‑ and high‑income countries, different regions, sectors, and social groups) so that AI‑related measures are not driven only by data‑rich, wealthy actors. 
+**2.** Use valid, transparent, and conceptually aligned definitions and proxies (e.g., AI capital stock, wealth inequality) and document data sources, construction steps, and limitations to avoid mis-measurement that systematically favours some groups over others.
+**3.** Routinely assess and correct for bias by checking how key variables are distributed across socioeconomic strata (e.g., via concentration indices, subgroup analyses), and by incorporating fairness or equity checks to detect when AI, capital, or outcome variables are disproportionately concentrated in certain groups.
+
+**Q.3.2. AI design, practices and analysis **
+**Let’s assume that you have been provided with the data that Skare M et al., used for their analysis. Now you are tasked to improve the analysis of the potential inequality related to AI development. From your knowledge on AI, and now the introduction to perspectives on measuring “equity”, list three limitations that you want to address in your improved analysis and provide the potential solutions. For example, “I will use unemployment as my socioeconomic measure instead of GNI and for the AI stock share, I will use Natural language processing to have a better or more reliable measure of the skill component of the capital stock category.”. Think on the mechanism behind AI’s effect on wealth distribution presented in Figure 1 and consider opportunities for analysis. Also, do not restrict to measures studied in class. Be as creative as you can but as concise as possible.**
+
+**Limitation 1 –** Country‑level averages hide within‑country inequities: I would incorporate distributional data within countries (e.g., AI adoption by firm size, sector, or income percentiles; wealth shares for top 1%, bottom 50%) and use subgroup‑specific inequality measures or decomposition analysis (e.g., by sector or income group) to see which sub-populations actually gained or lost from changes AI capital.
+
+**Limitation 2 –** Crude proxies for “AI technology” and “AI capital” miss who actually benefits: I would refine AI exposure measures using task‑level or occupation‑level AI intensity (e.g., NLP on job postings, skill requirements, and patents to quantify which tasks/skills are automated or complemented), then link this to labour‑market outcomes (wages, employment, hours) by education, gender, race, and sector to assess inequitable impacts more directly.
+
+**Limitation 3 –** The model treats “AI” as homogeneous and ignores differences between types of AI use: I would distinguish between labour‑displacing and labour‑complementing AI (e.g., automation in routine tasks vs. decision‑support tools) using more granular indicators or text‑mined classifications of AI projects, then estimate separate effects of each type on income and wealth distribution to see which AI applications are most inequity‑enhancing, (or -reducing).
+
+**Q.3.3. Take home messages**
+**Please summarize in three (3) sentences what are your take-home message form this very short and introductory course on Quantitative Perspectives on Measuring Equity. There are not right or wrong answers.**
+
+The course was an excellent introduction to evaluate the methodological rigour that goes into assessing different equity concepts and developing critical thinking to discern how well the methodology is established and if the concepts are adequately measuring the concepts defined in the research papers. I found the equity measuring tools explanation in the course to be very useful, and the application of the methodology as provided in R to be very practical for measuring equity in novel way that I was not aware of previously.I also found the course to be overall very engaging and I appreciated the opportunity to conduct critical thinking in research design and philisophically on the impact of AI on social health. The main takeaway that I took from the course was that equity is complex and not to take papers claims of measuring equity on face value, because often times that measures are not suitable to capture the concepts in equity and inequality.
